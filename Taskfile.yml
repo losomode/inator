@@ -1,0 +1,179 @@
+version: "3"
+
+vars:
+  BASE_DIR: "{{.ROOT_DIR}}"
+  LOG_DIR: "{{.ROOT_DIR}}/logs"
+
+  # Inator registry — add new inators here
+  # Format: name:backend_port:frontend_port
+  INATORS: >-
+    authinator:8001:3001
+    rmainator:8002:3002
+    fulfilinator:8003:3003
+
+  # Directory names (capitalized) — must match filesystem
+  AUTHINATOR_DIR: Authinator
+  RMAINATOR_DIR: RMAinator
+  FULFILINATOR_DIR: Fulfilinator
+
+set: [errexit, nounset, pipefail]
+
+tasks:
+  default:
+    desc: List available tasks
+    silent: true
+    cmds:
+      - task --list
+
+  # ─── Start ──────────────────────────────────────────
+
+  start:all:
+    desc: Start all inator services
+    cmds:
+      - task: start:authinator
+      - task: start:rmainator
+      - task: start:fulfilinator
+      - task: status
+
+  start:authinator:
+    desc: Start Authinator (backend :8001, frontend :3001)
+    cmds:
+      - task: _start
+        vars:
+          NAME: Authinator
+          DIR: "{{.AUTHINATOR_DIR}}"
+          BACKEND_PORT: "8001"
+          FRONTEND_PORT: "3001"
+
+  start:rmainator:
+    desc: Start RMAinator (backend :8002, frontend :3002)
+    cmds:
+      - task: _start
+        vars:
+          NAME: RMAinator
+          DIR: "{{.RMAINATOR_DIR}}"
+          BACKEND_PORT: "8002"
+          FRONTEND_PORT: "3002"
+
+  start:fulfilinator:
+    desc: Start Fulfilinator (backend :8003, frontend :3003)
+    cmds:
+      - task: _start
+        vars:
+          NAME: Fulfilinator
+          DIR: "{{.FULFILINATOR_DIR}}"
+          BACKEND_PORT: "8003"
+          FRONTEND_PORT: "3003"
+
+  _start:
+    internal: true
+    requires:
+      vars: [NAME, DIR, BACKEND_PORT, FRONTEND_PORT]
+    cmds:
+      - mkdir -p "{{.LOG_DIR}}"
+      - |
+        echo "▶️  Starting {{.NAME}} backend (:{{.BACKEND_PORT}})..."
+        nohup "{{.BASE_DIR}}/{{.DIR}}/.venv/bin/python" \
+          "{{.BASE_DIR}}/{{.DIR}}/backend/manage.py" runserver {{.BACKEND_PORT}} \
+          > "{{.LOG_DIR}}/{{.NAME}}-backend.log" 2>&1 &
+        echo "   PID: $!"
+      - |
+        echo "▶️  Starting {{.NAME}} frontend (:{{.FRONTEND_PORT}})..."
+        cd "{{.BASE_DIR}}/{{.DIR}}/frontend"
+        nohup npx vite --port {{.FRONTEND_PORT}} --strictPort \
+          > "{{.LOG_DIR}}/{{.NAME}}-frontend.log" 2>&1 &
+        echo "   PID: $!"
+      - sleep 2
+
+  # ─── Stop ───────────────────────────────────────────
+
+  stop:all:
+    desc: Stop all inator services
+    cmds:
+      - task: stop:authinator
+      - task: stop:rmainator
+      - task: stop:fulfilinator
+      - task: status
+
+  stop:authinator:
+    desc: Stop Authinator
+    cmds:
+      - task: _stop
+        vars: { NAME: Authinator, BACKEND_PORT: "8001", FRONTEND_PORT: "3001" }
+
+  stop:rmainator:
+    desc: Stop RMAinator
+    cmds:
+      - task: _stop
+        vars: { NAME: RMAinator, BACKEND_PORT: "8002", FRONTEND_PORT: "3002" }
+
+  stop:fulfilinator:
+    desc: Stop Fulfilinator
+    cmds:
+      - task: _stop
+        vars: { NAME: Fulfilinator, BACKEND_PORT: "8003", FRONTEND_PORT: "3003" }
+
+  _stop:
+    internal: true
+    requires:
+      vars: [NAME, BACKEND_PORT, FRONTEND_PORT]
+    cmds:
+      - |
+        echo "⏹  Stopping {{.NAME}}..."
+        pkill -f "manage.py runserver {{.BACKEND_PORT}}" 2>/dev/null || true
+        pkill -f "vite.*{{.FRONTEND_PORT}}" 2>/dev/null || true
+
+  # ─── Restart ────────────────────────────────────────
+
+  restart:all:
+    desc: Restart all inator services
+    cmds:
+      - task: stop:all
+      - sleep 1
+      - task: start:all
+
+  restart:authinator:
+    desc: Restart Authinator
+    cmds:
+      - task: stop:authinator
+      - sleep 1
+      - task: start:authinator
+
+  restart:rmainator:
+    desc: Restart RMAinator
+    cmds:
+      - task: stop:rmainator
+      - sleep 1
+      - task: start:rmainator
+
+  restart:fulfilinator:
+    desc: Restart Fulfilinator
+    cmds:
+      - task: stop:fulfilinator
+      - sleep 1
+      - task: start:fulfilinator
+
+  # ─── Status ─────────────────────────────────────────
+
+  status:
+    desc: Check which inator ports are listening
+    silent: true
+    cmds:
+      - |
+        echo ""
+        echo "Port status:"
+        for port in 8001 3001 8002 3002 8003 3003; do
+          if lsof -iTCP:$port -sTCP:LISTEN -P >/dev/null 2>&1; then
+            echo "  :$port ✓"
+          else
+            echo "  :$port ✗"
+          fi
+        done
+        echo ""
+
+  # ─── Logs ───────────────────────────────────────────
+
+  logs:
+    desc: Tail all inator logs
+    cmds:
+      - tail -f {{.LOG_DIR}}/*.log
