@@ -17,7 +17,7 @@ graph TB
             RMA[📦 RMAinator<br/><i>Return Merchandise</i>]
             FULFIL[🚚 Fulfilinator<br/><i>Order Fulfillment</i>]
             INV[📋 Inventoryinator<br/><i>Coming Soon</i>]
-            BILL[💰 Billinginator<br/><i>Coming Soon</i>]
+            NOTIF[🔔 Notificationinator<br/><i>Coming Soon</i>]
             USAGE[📊 Usageinator<br/><i>Coming Soon</i>]
         end
     end
@@ -25,14 +25,14 @@ graph TB
     AUTH -- JWT tokens --> RMA
     AUTH -- JWT tokens --> FULFIL
     AUTH -- JWT tokens --> INV
-    AUTH -- JWT tokens --> BILL
+    AUTH -- JWT tokens --> NOTIF
     AUTH -- JWT tokens --> USAGE
 
     style AUTH fill:#4a90d9,color:#fff
     style RMA fill:#27ae60,color:#fff
     style FULFIL fill:#e67e22,color:#fff
     style INV fill:#95a5a6,color:#fff,stroke-dasharray: 5 5
-    style BILL fill:#95a5a6,color:#fff,stroke-dasharray: 5 5
+    style NOTIF fill:#95a5a6,color:#fff,stroke-dasharray: 5 5
     style USAGE fill:#95a5a6,color:#fff,stroke-dasharray: 5 5
 ```
 
