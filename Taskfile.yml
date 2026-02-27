@@ -81,7 +81,7 @@ tasks:
         echo "▶️  Starting {{.NAME}} frontend (:{{.FRONTEND_PORT}})..."
         cd "{{.BASE_DIR}}/{{.DIR}}/frontend"
         nohup npx vite --port {{.FRONTEND_PORT}} --strictPort \
-          > "{{.LOG_DIR}}/{{.NAME}}-frontend.log" 2>&1 &
+          < /dev/null > "{{.LOG_DIR}}/{{.NAME}}-frontend.log" 2>&1 &
         echo "   PID: $!"
       - sleep 2
 
