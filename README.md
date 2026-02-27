@@ -19,6 +19,7 @@ graph TB
             INV[📋 Inventoryinator<br/><i>Coming Soon</i>]
             NOTIF[🔔 Notificationinator<br/><i>Coming Soon</i>]
             USAGE[📊 Usageinator<br/><i>Coming Soon</i>]
+            LIC[📄 Licenseinator<br/><i>Coming Soon</i>]
         end
     end
 
@@ -27,6 +28,7 @@ graph TB
     AUTH -- JWT tokens --> INV
     AUTH -- JWT tokens --> NOTIF
     AUTH -- JWT tokens --> USAGE
+    AUTH -- JWT tokens --> LIC
 
     style AUTH fill:#4a90d9,color:#fff
     style RMA fill:#27ae60,color:#fff
@@ -34,6 +36,7 @@ graph TB
     style INV fill:#95a5a6,color:#fff,stroke-dasharray: 5 5
     style NOTIF fill:#95a5a6,color:#fff,stroke-dasharray: 5 5
     style USAGE fill:#95a5a6,color:#fff,stroke-dasharray: 5 5
+    style LIC fill:#95a5a6,color:#fff,stroke-dasharray: 5 5
 ```
 
 **Authinator** is the foundation — every other inator delegates authentication and user management to it via JWT. Services never store credentials; they validate tokens against Authinator's API.
