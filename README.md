@@ -153,6 +153,38 @@ task setup              # Re-run setup
 task start:all          # Start again
 ```
 
+### Demo Database
+
+Want to see the platform in action with realistic data? The demo database includes 3 companies, 6 users, items, purchase orders, orders, deliveries, and RMAs across various states.
+
+```bash
+# Build the demo databases (does NOT touch your active data)
+task setup:demodb
+
+# Switch to demo data
+task demodb:activate
+
+# Restart services to pick up the new DBs
+task restart:all
+```
+
+Log in as `admin` / `admin123` or any demo user with password `demo123`:
+
+| User | Role | Company |
+|------|------|---------|
+| `sarah.chen` | Admin | Meridian Security Solutions |
+| `james.wilson` | User | Meridian Security Solutions |
+| `lisa.patel` | User | Apex Manufacturing |
+| `mike.torres` | User | Apex Manufacturing |
+| `emma.jackson` | User | Coastal Networks |
+
+To switch back to your real data:
+
+```bash
+task demodb:deactivate
+task restart:all
+```
+
 ### Platform-Level Tasks
 
 ```bash
@@ -160,6 +192,11 @@ task start:all          # Start again
 task setup                # Install all inators, create .env files, run migrations
 task setup:authinator     # Setup just Authinator
 task setup:rmainator      # Setup just RMAinator
+
+# Demo data
+task setup:demodb         # Build demo databases with sample data
+task demodb:activate      # Swap to demo data (backs up active DBs)
+task demodb:deactivate    # Restore original databases
 
 # Start/Stop/Restart
 task start:all            # Start all services
