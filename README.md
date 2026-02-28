@@ -118,29 +118,21 @@ git clone git@github.com:losomode/AUTHinator.git Authinator
 git clone git@github.com:losomode/RMAinator.git RMAinator
 git clone git@github.com:losomode/FULFILinator.git Fulfilinator
 
-# 2. Run first-time setup (installs deps, creates .env files, runs migrations)
+# 2. Run first-time setup (installs deps, creates .env, migrates, creates admin)
 task setup
 
-# 3. Create your first admin user
-cd Authinator
-task backend:manage -- createsuperuser
-cd ..
-
-# 4. Configure each inator's backend/.env
-# Edit Authinator/backend/.env (set SECRET_KEY, configure SSO if needed)
-# Edit RMAinator/backend/.env (set AUTHINATOR_API_URL to http://localhost:8001/api/auth/)
-# Edit Fulfilinator/backend/.env (set AUTHINATOR_API_URL to http://localhost:8001/api/auth/)
-
-# 5. Start everything
+# 3. Start everything
 task start:all
 ```
+
+Setup will prompt to create a default admin user (`admin` / `admin@example.com` / `admin123`). You can skip this and create one manually later with `cd Authinator && task backend:manage -- createsuperuser`.
 
 **Access your inators:**
 - **Authinator**: http://localhost:3001 (Auth, Users, SSO)
 - **RMAinator**: http://localhost:3002 (RMA Tracking)
 - **Fulfilinator**: http://localhost:3003 (Order Fulfillment)
 
-Log in with the superuser credentials you created in step 3. Other users can register through the Authinator UI and will need admin approval.
+Log in with the admin credentials. Other users can register through the Authinator UI and will need admin approval.
 
 ### Troubleshooting
 

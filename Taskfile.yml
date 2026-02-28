@@ -33,15 +33,14 @@ tasks:
       - task: setup:authinator
       - task: setup:rmainator
       - task: setup:fulfilinator
+      - task: setup:admin
       - echo ""
       - echo "✅ Setup complete! All inators are ready."
       - echo ""
       - echo "Next steps:"
-      - echo "  1. Create your admin user:"
-      - echo "     cd Authinator && task backend:manage -- createsuperuser && cd .."
-      - echo "  2. Start all services:"
+      - echo "  1. Start all services:"
       - echo "     task start:all"
-      - echo "  3. Access services"
+      - echo "  2. Access services"
       - echo "     Authinator  - http://localhost:3001"
       - echo "     RMAinator   - http://localhost:3002"
       - echo "     Fulfilinator - http://localhost:3003"
@@ -83,6 +82,33 @@ tasks:
       - cd "{{.BASE_DIR}}/{{.DIR}}" && task backend:migrate
       - echo "✓ {{.NAME}} setup complete"
       - echo ""
+
+  setup:admin:
+    desc: Create a default admin user in Authinator (interactive)
+    cmds:
+      - |
+        echo ""
+        echo "──────────────────────────────────────────"
+        echo "  Admin User Setup"
+        echo "──────────────────────────────────────────"
+        echo ""
+        printf "Create a default admin user? (admin / admin@example.com / admin123) [Y/n] "
+        read -r answer </dev/tty
+        case "$answer" in
+          [nN]*)
+            echo "Skipping admin creation."
+            echo "You can create one later with:"
+            echo "  cd Authinator && task backend:manage -- createsuperuser"
+            ;;
+          *)
+            DJANGO_SUPERUSER_PASSWORD=admin123 \
+              "{{.BASE_DIR}}/{{.AUTHINATOR_DIR}}/.venv/bin/python" \
+              "{{.BASE_DIR}}/{{.AUTHINATOR_DIR}}/backend/manage.py" \
+              createsuperuser --noinput --username admin --email admin@example.com 2>&1 \
+            && echo "✓ Admin user created (admin / admin123)" \
+            || echo "⚠ Admin user already exists, skipping"
+            ;;
+        esac
 
   # ─── Start ──────────────────────────────────────────
 
