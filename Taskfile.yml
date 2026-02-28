@@ -40,10 +40,8 @@ tasks:
       - echo "Next steps:"
       - echo "  1. Start all services:"
       - echo "     task start:all"
-      - echo "  2. Access services"
-      - echo "     Authinator  - http://localhost:3001"
-      - echo "     RMAinator   - http://localhost:3002"
-      - echo "     Fulfilinator - http://localhost:3003"
+      - echo "  2. Access the platform"
+      - echo "     Gateway (unified) - http://localhost:8080"
       - echo ""
 
   setup:authinator:
@@ -110,14 +108,80 @@ tasks:
             ;;
         esac
 
+  # ─── Unified Frontend ───────────────────────────────────
+
+  frontend:install:
+    desc: Install unified frontend dependencies
+    cmds:
+      - cd "{{.BASE_DIR}}/frontend" && task install
+
+  frontend:dev:
+    desc: Start unified frontend dev server (:5173)
+    cmds:
+      - cd "{{.BASE_DIR}}/frontend" && task dev
+
+  frontend:build:
+    desc: Build unified frontend for production
+    cmds:
+      - cd "{{.BASE_DIR}}/frontend" && task build
+
+  frontend:check:
+    desc: Run pre-commit checks on unified frontend
+    cmds:
+      - cd "{{.BASE_DIR}}/frontend" && task check
+
+  frontend:start:
+    desc: Start unified frontend dev server (background, :5173)
+    cmds:
+      - mkdir -p "{{.LOG_DIR}}"
+      - |
+        echo "▶️  Starting unified frontend (:5173)..."
+        cd "{{.BASE_DIR}}/frontend"
+        nohup npx vite --port 5173 --strictPort \
+          < /dev/null > "{{.LOG_DIR}}/frontend.log" 2>&1 &
+        echo "   PID: $!"
+      - sleep 2
+
+  frontend:stop:
+    desc: Stop unified frontend dev server
+    cmds:
+      - |
+        echo "⏹  Stopping unified frontend..."
+        pkill -f "vite.*5173" 2>/dev/null || true
+
+  # ─── Gateway ─────────────────────────────────────────
+
+  gateway:start:
+    desc: Start Caddy reverse proxy gateway (:8080)
+    cmds:
+      - mkdir -p "{{.LOG_DIR}}"
+      - |
+        echo "▶️  Starting Caddy gateway (:8080)..."
+        nohup caddy run --config "{{.BASE_DIR}}/Caddyfile.dev" \
+          > "{{.LOG_DIR}}/gateway.log" 2>&1 &
+        echo "   PID: $!"
+      - sleep 1
+
+  gateway:stop:
+    desc: Stop Caddy reverse proxy gateway
+    cmds:
+      - |
+        echo "⏹  Stopping Caddy gateway..."
+        pkill -f "caddy run.*Caddyfile.dev" 2>/dev/null || true
+
   # ─── Start ──────────────────────────────────────────
 
   start:all:
-    desc: Start all inator services and register with Authinator
+    desc: Start all backends, unified frontend, gateway, and register services
     cmds:
-      - task: start:authinator
-      - task: start:rmainator
-      - task: start:fulfilinator
+      - task: _start_backend
+        vars: { NAME: Authinator, DIR: "{{.AUTHINATOR_DIR}}", BACKEND_PORT: "8001" }
+      - task: _start_backend
+        vars: { NAME: RMAinator, DIR: "{{.RMAINATOR_DIR}}", BACKEND_PORT: "8002" }
+      - task: _start_backend
+        vars: { NAME: Fulfilinator, DIR: "{{.FULFILINATOR_DIR}}", BACKEND_PORT: "8003" }
+      - task: frontend:start
+      - task: gateway:start
       - task: register
       - task: status
 
@@ -159,10 +223,10 @@ tasks:
           BACKEND_PORT: "8003"
           FRONTEND_PORT: "3003"
 
-  _start:
+  _start_backend:
     internal: true
     requires:
-      vars: [NAME, DIR, BACKEND_PORT, FRONTEND_PORT]
+      vars: [NAME, DIR, BACKEND_PORT]
     cmds:
       - mkdir -p "{{.LOG_DIR}}"
       - |
@@ -171,6 +235,16 @@ tasks:
           "{{.BASE_DIR}}/{{.DIR}}/backend/manage.py" runserver {{.BACKEND_PORT}} \
           > "{{.LOG_DIR}}/{{.NAME}}-backend.log" 2>&1 &
         echo "   PID: $!"
+      - sleep 1
+
+  _start:
+    internal: true
+    desc: "(legacy) Start both backend and per-inator frontend"
+    requires:
+      vars: [NAME, DIR, BACKEND_PORT, FRONTEND_PORT]
+    cmds:
+      - task: _start_backend
+        vars: { NAME: "{{.NAME}}", DIR: "{{.DIR}}", BACKEND_PORT: "{{.BACKEND_PORT}}" }
       - |
         echo "▶️  Starting {{.NAME}} frontend (:{{.FRONTEND_PORT}})..."
         cd "{{.BASE_DIR}}/{{.DIR}}/frontend"
@@ -182,8 +256,10 @@ tasks:
   # ─── Stop ───────────────────────────────────────────
 
   stop:all:
-    desc: Stop all inator services
+    desc: Stop all services, unified frontend, and gateway
     cmds:
+      - task: gateway:stop
+      - task: frontend:stop
       - task: stop:authinator
       - task: stop:rmainator
       - task: stop:fulfilinator
@@ -256,7 +332,7 @@ tasks:
       - |
         echo ""
         echo "Port status:"
-        for port in 8001 3001 8002 3002 8003 3003; do
+        for port in 8080 5173 8001 3001 8002 3002 8003 3003; do
           if lsof -iTCP:$port -sTCP:LISTEN -P >/dev/null 2>&1; then
             echo "  :$port ✓"
           else

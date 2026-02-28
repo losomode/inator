@@ -17,6 +17,10 @@ planning/
 logs/
 *.log
 
+# Node / Frontend
+node_modules/
+coverage/
+
 # OS
 .DS_Store
 Thumbs.db

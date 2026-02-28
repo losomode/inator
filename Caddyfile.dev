@@ -1,0 +1,40 @@
+# Inator Platform — Development Gateway
+# Usage: caddy run --config Caddyfile.dev
+#
+# Routes all traffic through a single port (8080).
+# API requests are proxied to the appropriate backend by path prefix.
+# Everything else goes to the Vite dev server.
+
+:8080 {
+	# Authinator backend
+	handle /api/auth/* {
+		reverse_proxy localhost:8001
+	}
+	handle /api/users/* {
+		reverse_proxy localhost:8001
+	}
+	handle /api/services/* {
+		reverse_proxy localhost:8001
+	}
+	handle /accounts/* {
+		reverse_proxy localhost:8001
+	}
+	handle /admin/* {
+		reverse_proxy localhost:8001
+	}
+
+	# RMAinator backend
+	handle /api/rma/* {
+		reverse_proxy localhost:8002
+	}
+
+	# Fulfilinator backend
+	handle /api/fulfil/* {
+		reverse_proxy localhost:8003
+	}
+
+	# Everything else → Vite dev server (unified frontend)
+	handle {
+		reverse_proxy localhost:5173
+	}
+}

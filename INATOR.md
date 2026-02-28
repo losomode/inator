@@ -13,9 +13,13 @@ Standards and conventions for all inator microservices.
 
 ## Architecture
 
-Each inator is a self-contained microservice with:
+The platform uses a **unified gateway architecture**:
+- **Caddy** reverse proxy on `:8080` routes all traffic
+- **Unified frontend** (`frontend/` at platform root) — single React SPA for all inator UIs
+- Each inator provides a **backend only** — Django + DRF
+
+Each inator directory contains:
 - `backend/` — Django + Django REST Framework (settings in `config/`)
-- `frontend/` — Vite + Tailwind CSS (npm)
 - `deft/` — Shared AI agent framework (Deft)
 - `Taskfile.yml` — Task runner (replaces Makefile)
 - `docs/` — External-facing documentation (screenshots, guides); committed to git
@@ -23,15 +27,17 @@ Each inator is a self-contained microservice with:
 
 ### Port Assignments
 
-Each inator MUST have a unique port to allow parallel local development:
+Each inator backend MUST have a unique port. The gateway and unified frontend are managed at the platform level.
 
-| Service       | Backend Port | Frontend Port |
-|---------------|-------------|---------------|
-| Authinator    | 8001        | 3001          |
-| RMAinator     | 8002        | 3002          |
-| Fulfilinator  | 8003        | 3003          |
+| Service              | Port  | Notes                        |
+|----------------------|-------|------------------------------|
+| Caddy Gateway        | 8080  | Single entry point           |
+| Unified Frontend     | 5173  | Vite dev server              |
+| Authinator backend   | 8001  | `/api/auth`, `/api/users`    |
+| RMAinator backend    | 8002  | `/api/rma`                   |
+| Fulfilinator backend | 8003  | `/api/fulfil`                |
 
-New inators increment from the highest assigned port.
+New inators increment from the highest assigned backend port.
 
 ### Inter-Service Communication
 
@@ -94,13 +100,15 @@ The `PROJECT_NAME` var in Taskfile.yml MUST match the service directory name.
 ## Creating a New Inator
 
 1. Create directory `<name>inator/` under this root.
-2. Scaffold `backend/` with Django + DRF, `frontend/` with Vite + Tailwind.
-3. Copy and adapt `Taskfile.yml` from an existing inator.
-4. Copy `deft/` framework from an existing inator.
-5. Assign the next available port pair.
-6. Create `.env.example`, `.gitignore`, `README.md`.
-7. Initialize git repo.
-8. Update the port table in this file.
+2. Scaffold `backend/` with Django + DRF.
+3. Add a frontend module in the unified SPA (`frontend/src/modules/<name>/`).
+4. Copy and adapt `Taskfile.yml` from an existing inator.
+5. Copy `deft/` framework from an existing inator.
+6. Assign the next available backend port.
+7. Add a route block in `Caddyfile.dev` for the new API prefix.
+8. Create `.env.example`, `.gitignore`, `README.md`.
+9. Initialize git repo.
+10. Update the port table in this file.
 
 ## Quality Gates
 

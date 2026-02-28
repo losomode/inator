@@ -1,0 +1,215 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { rmaApi } from '../api';
+import { STATE_COLORS } from '../types';
+import type { RMA } from '../types';
+
+type ViewMode = 'all' | 'byGroup';
+
+/** User-facing RMA dashboard — shows all owned RMAs with optional group view. */
+export function Dashboard(): React.JSX.Element {
+  const [rmas, setRmas] = useState<RMA[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('all');
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    void loadRMAs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showArchived]);
+
+  const loadRMAs = async (): Promise<void> => {
+    try {
+      setLoading(true);
+      const data = await rmaApi.list({ archived: showArchived });
+      setRmas(data);
+    } catch {
+      setError('Failed to load RMAs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      {/* Toolbar */}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+        <h2 className="text-xl font-semibold text-gray-900">My RMAs</h2>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => setShowArchived(!showArchived)}
+            className="rounded-md border border-gray-300 bg-white px-5 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            {showArchived ? 'Show Active' : 'Show Completed'}
+          </button>
+          <button
+            onClick={() => navigate('/rma/new')}
+            className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            + New RMA
+          </button>
+        </div>
+      </div>
+
+      {/* View mode toggle */}
+      <div className="mb-8 flex flex-wrap items-center gap-4 rounded-lg bg-white p-5 shadow-sm">
+        <span className="text-sm font-semibold text-gray-900">View:</span>
+        <div className="flex gap-3">
+          {(['all', 'byGroup'] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className={`rounded-md border px-4 py-2 text-sm transition-colors ${
+                viewMode === mode
+                  ? 'border-blue-600 bg-blue-600 font-medium text-white'
+                  : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              {mode === 'all' ? 'All RMAs' : 'By RMA Group'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error && <div className="mb-5 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+
+      {loading ? (
+        <div className="py-10 text-center text-gray-500">Loading...</div>
+      ) : rmas.length === 0 ? (
+        <div className="rounded-lg bg-white p-16 text-center shadow-sm">
+          <p className="text-gray-500">No RMAs found</p>
+          {!showArchived && (
+            <button
+              onClick={() => navigate('/rma/new')}
+              className="mt-4 rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Create your first RMA
+            </button>
+          )}
+        </div>
+      ) : (
+        <RMAView rmas={rmas} viewMode={viewMode} />
+      )}
+    </>
+  );
+}
+
+function RMAView({ rmas, viewMode }: { rmas: RMA[]; viewMode: ViewMode }): React.JSX.Element {
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  const toggleGroup = (groupId: string): void => {
+    setExpandedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
+
+  if (viewMode === 'byGroup') {
+    const grouped: Record<number, RMA[]> = {};
+    const ungrouped: RMA[] = [];
+
+    rmas.forEach((rma) => {
+      if (rma.group_id) {
+        if (!grouped[rma.group_id]) grouped[rma.group_id] = [];
+        grouped[rma.group_id]!.push(rma);
+      } else {
+        ungrouped.push(rma);
+      }
+    });
+
+    return (
+      <div>
+        {Object.entries(grouped).map(([groupId, groupRmas]) => {
+          const isExpanded = expandedGroups[groupId] !== false;
+          return (
+            <div key={`group-${groupId}`} className="mb-12">
+              <div className="mb-5 flex items-center gap-3 rounded-lg border-l-4 border-blue-600 bg-gray-50 p-5">
+                <button
+                  onClick={() => toggleGroup(groupId)}
+                  className="rounded border border-gray-300 px-3 py-1 text-sm font-bold text-blue-600"
+                  aria-label={isExpanded ? 'Collapse group' : 'Expand group'}
+                >
+                  {isExpanded ? '▼' : '▶'}
+                </button>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  📦 RMA Group #{groupId}
+                  <span className="ml-2 text-sm font-normal text-gray-500">
+                    ({groupRmas.length} devices)
+                  </span>
+                </h3>
+              </div>
+              {isExpanded && <RMAGrid rmas={groupRmas} />}
+            </div>
+          );
+        })}
+
+        {ungrouped.length > 0 && (
+          <div className="mb-6">
+            <h3 className="mb-5 text-lg font-semibold text-gray-900">Individual RMAs</h3>
+            <RMAGrid rmas={ungrouped} />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return <RMAGrid rmas={rmas} />;
+}
+
+function RMAGrid({ rmas }: { rmas: RMA[] }): React.JSX.Element {
+  return (
+    <div className="grid w-full grid-cols-[repeat(auto-fill,minmax(280px,1fr))] items-start gap-6">
+      {rmas.map((rma) => (
+        <RMACard key={rma.id} rma={rma} />
+      ))}
+    </div>
+  );
+}
+
+function RMACard({ rma }: { rma: RMA }): React.JSX.Element {
+  const navigate = useNavigate();
+
+  return (
+    <div
+      onClick={() => navigate(`/rma/${String(rma.id)}`)}
+      className="cursor-pointer rounded-lg bg-white p-5 shadow transition-shadow hover:shadow-lg"
+      role="link"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') navigate(`/rma/${String(rma.id)}`);
+      }}
+    >
+      <div className="mb-3 flex items-center justify-between border-b border-gray-100 pb-3">
+        <span className="text-base font-bold text-gray-900">RMA #{rma.rma_number}</span>
+        <span
+          className="rounded-full px-3 py-1 text-xs font-medium text-white"
+          style={{ backgroundColor: STATE_COLORS[rma.state] }}
+        >
+          {rma.state}
+        </span>
+      </div>
+      <div className="flex flex-col gap-2 text-sm text-gray-600">
+        {rma.group_id && (
+          <span className="inline-block w-fit rounded bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+            📦 Group #{rma.group_id}
+          </span>
+        )}
+        <div>
+          <strong>Serial:</strong> {rma.serial_number}
+        </div>
+        <div>
+          <strong>Priority:</strong> {rma.priority}
+        </div>
+        <div>
+          <strong>Created:</strong> {new Date(rma.created_at).toLocaleDateString()}
+        </div>
+        {rma.is_archived && (
+          <div>
+            <strong>{rma.state === 'COMPLETED' ? 'Completed:' : 'Closed:'}</strong>{' '}
+            {new Date(rma.updated_at).toLocaleDateString()}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
