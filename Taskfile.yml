@@ -37,9 +37,14 @@ tasks:
       - echo "✅ Setup complete! All inators are ready."
       - echo ""
       - echo "Next steps:"
-      - echo "  1. Edit backend/.env files with your settings (Authinator URL, secrets, etc.)"
-      - echo "  2. Run 'task start:all' to start all services"
-      - echo "  3. Access services at http://localhost:3001 (Auth), :3002 (RMA), :3003 (Fulfil)"
+      - echo "  1. Create your admin user:"
+      - echo "     cd Authinator && task backend:manage -- createsuperuser && cd .."
+      - echo "  2. Start all services:"
+      - echo "     task start:all"
+      - echo "  3. Access services:"
+      - echo "     Authinator:  http://localhost:3001"
+      - echo "     RMAinator:   http://localhost:3002"
+      - echo "     Fulfilinator: http://localhost:3003"
       - echo ""
 
   setup:authinator:
@@ -82,12 +87,21 @@ tasks:
   # ─── Start ──────────────────────────────────────────
 
   start:all:
-    desc: Start all inator services
+    desc: Start all inator services and register with Authinator
     cmds:
       - task: start:authinator
       - task: start:rmainator
       - task: start:fulfilinator
+      - task: register
       - task: status
+
+  register:
+    desc: Register all services with Authinator (requires services to be running)
+    cmds:
+      - |
+        echo "📋 Registering services with Authinator..."
+        cd "{{.BASE_DIR}}/{{.RMAINATOR_DIR}}" && task backend:manage -- register_service 2>/dev/null || echo "   ⚠ RMAinator registration failed (is Authinator running?)"
+        cd "{{.BASE_DIR}}/{{.FULFILINATOR_DIR}}" && task backend:manage -- register_service 2>/dev/null || echo "   ⚠ Fulfilinator registration failed (is Authinator running?)"
 
   start:authinator:
     desc: Start Authinator (backend :8001, frontend :3001)
