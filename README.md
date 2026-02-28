@@ -121,12 +121,17 @@ git clone git@github.com:losomode/FULFILinator.git Fulfilinator
 # 2. Run first-time setup (installs deps, creates .env files, runs migrations)
 task setup
 
-# 3. Configure each inator's backend/.env
+# 3. Create your first admin user
+cd Authinator
+task backend:manage -- createsuperuser
+cd ..
+
+# 4. Configure each inator's backend/.env
 # Edit Authinator/backend/.env (set SECRET_KEY, configure SSO if needed)
 # Edit RMAinator/backend/.env (set AUTHINATOR_API_URL to http://localhost:8001/api/auth/)
 # Edit Fulfilinator/backend/.env (set AUTHINATOR_API_URL to http://localhost:8001/api/auth/)
 
-# 4. Start everything
+# 5. Start everything
 task start:all
 ```
 
@@ -134,6 +139,8 @@ task start:all
 - **Authinator**: http://localhost:3001 (Auth, Users, SSO)
 - **RMAinator**: http://localhost:3002 (RMA Tracking)
 - **Fulfilinator**: http://localhost:3003 (Order Fulfillment)
+
+Log in with the superuser credentials you created in step 3. Other users can register through the Authinator UI and will need admin approval.
 
 ### Troubleshooting
 
