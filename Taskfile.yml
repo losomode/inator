@@ -41,10 +41,10 @@ tasks:
       - echo "     cd Authinator && task backend:manage -- createsuperuser && cd .."
       - echo "  2. Start all services:"
       - echo "     task start:all"
-      - echo "  3. Access services:"
-      - echo "     Authinator:  http://localhost:3001"
-      - echo "     RMAinator:   http://localhost:3002"
-      - echo "     Fulfilinator: http://localhost:3003"
+      - echo "  3. Access services"
+      - echo "     Authinator  - http://localhost:3001"
+      - echo "     RMAinator   - http://localhost:3002"
+      - echo "     Fulfilinator - http://localhost:3003"
       - echo ""
 
   setup:authinator:
