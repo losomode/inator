@@ -25,6 +25,60 @@ tasks:
     cmds:
       - task --list
 
+  # ─── Setup ──────────────────────────────────────────
+
+  setup:
+    desc: First-time setup for all inators (install deps, configure env, migrate)
+    cmds:
+      - task: setup:authinator
+      - task: setup:rmainator
+      - task: setup:fulfilinator
+      - echo ""
+      - echo "✅ Setup complete! All inators are ready."
+      - echo ""
+      - echo "Next steps:"
+      - echo "  1. Edit backend/.env files with your settings (Authinator URL, secrets, etc.)"
+      - echo "  2. Run 'task start:all' to start all services"
+      - echo "  3. Access services at http://localhost:3001 (Auth), :3002 (RMA), :3003 (Fulfil)"
+      - echo ""
+
+  setup:authinator:
+    desc: Setup Authinator
+    cmds:
+      - task: _setup
+        vars: { NAME: Authinator, DIR: "{{.AUTHINATOR_DIR}}" }
+
+  setup:rmainator:
+    desc: Setup RMAinator
+    cmds:
+      - task: _setup
+        vars: { NAME: RMAinator, DIR: "{{.RMAINATOR_DIR}}" }
+
+  setup:fulfilinator:
+    desc: Setup Fulfilinator
+    cmds:
+      - task: _setup
+        vars: { NAME: Fulfilinator, DIR: "{{.FULFILINATOR_DIR}}" }
+
+  _setup:
+    internal: true
+    requires:
+      vars: [NAME, DIR]
+    cmds:
+      - echo "🔧 Setting up {{.NAME}}..."
+      - cd "{{.BASE_DIR}}/{{.DIR}}" && task install
+      - |
+        if [ ! -f "{{.BASE_DIR}}/{{.DIR}}/backend/.env" ]; then
+          echo "   Creating backend/.env from .env.example"
+          cp "{{.BASE_DIR}}/{{.DIR}}/backend/.env.example" "{{.BASE_DIR}}/{{.DIR}}/backend/.env"
+        else
+          echo "   backend/.env already exists, skipping"
+        fi
+      - echo "   Running migrations..."
+      - cd "{{.BASE_DIR}}/{{.DIR}}" && task backend:migrate
+      - echo "✓ {{.NAME}} setup complete"
+      - echo ""
+
   # ─── Start ──────────────────────────────────────────
 
   start:all:

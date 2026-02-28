@@ -102,23 +102,67 @@ Authinator owns the role definitions. Every other inator reads the role from the
 
 ## Quick Start
 
-Requires [Task](https://taskfile.dev/) (`brew install go-task`).
+### Prerequisites
+- [Task](https://taskfile.dev/) — `brew install go-task`
+- Python 3.11+
+- Node.js 18+
+- Git (configured for SSH)
+
+### Installation
 
 ```bash
-# Clone this repo and each inator you need
+# 1. Clone the platform and all inators
 git clone git@github.com:losomode/inator.git
 cd inator
 git clone git@github.com:losomode/AUTHinator.git Authinator
 git clone git@github.com:losomode/RMAinator.git RMAinator
 git clone git@github.com:losomode/FULFILinator.git Fulfilinator
 
-# Start everything
+# 2. Run first-time setup (installs deps, creates .env files, runs migrations)
+task setup
+
+# 3. Configure each inator's backend/.env
+# Edit Authinator/backend/.env (set SECRET_KEY, configure SSO if needed)
+# Edit RMAinator/backend/.env (set AUTHINATOR_API_URL to http://localhost:8001/api/auth/)
+# Edit Fulfilinator/backend/.env (set AUTHINATOR_API_URL to http://localhost:8001/api/auth/)
+
+# 4. Start everything
 task start:all
+```
+
+**Access your inators:**
+- **Authinator**: http://localhost:3001 (Auth, Users, SSO)
+- **RMAinator**: http://localhost:3002 (RMA Tracking)
+- **Fulfilinator**: http://localhost:3003 (Order Fulfillment)
+
+### Troubleshooting
+
+If services fail to start:
+
+```bash
+# Check status
+task status
+
+# View logs
+tail -50 logs/Authinator-backend.log
+tail -50 logs/RMAinator-backend.log
+tail -50 logs/Fulfilinator-backend.log
+
+# Common fixes
+task stop:all           # Stop everything
+task setup              # Re-run setup
+task start:all          # Start again
 ```
 
 ### Platform-Level Tasks
 
 ```bash
+# Setup (first-time only)
+task setup                # Install all inators, create .env files, run migrations
+task setup:authinator     # Setup just Authinator
+task setup:rmainator      # Setup just RMAinator
+
+# Start/Stop/Restart
 task start:all            # Start all services
 task stop:all             # Stop all services
 task restart:all          # Restart all services
