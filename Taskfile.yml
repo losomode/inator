@@ -265,6 +265,110 @@ tasks:
         done
         echo ""
 
+  # ─── Demo Database ───────────────────────────────────
+
+  setup:demodb:
+    desc: Build demo databases with sample data (does NOT touch active DBs)
+    cmds:
+      - |
+        echo ""
+        echo "══════════════════════════════════════════"
+        echo "  Building demo databases"
+        echo "══════════════════════════════════════════"
+        echo ""
+        for inator_dir in "{{.AUTHINATOR_DIR}}" "{{.RMAINATOR_DIR}}" "{{.FULFILINATOR_DIR}}"; do
+          DB="{{.BASE_DIR}}/$inator_dir/backend/db.sqlite3"
+          DEMO="{{.BASE_DIR}}/$inator_dir/backend/db-demo.sqlite3"
+          USER_BAK="{{.BASE_DIR}}/$inator_dir/backend/db.sqlite3.demobuild"
+
+          # Stash active DB
+          if [ -f "$DB" ]; then
+            mv "$DB" "$USER_BAK"
+          fi
+
+          echo "🔧 Migrating $inator_dir..."
+          cd "{{.BASE_DIR}}/$inator_dir" && task backend:migrate 2>&1 | tail -1
+
+          # Create admin superuser (Authinator only)
+          if [ "$inator_dir" = "{{.AUTHINATOR_DIR}}" ]; then
+            echo "   Creating admin superuser..."
+            DJANGO_SUPERUSER_PASSWORD=admin123 \
+              "{{.BASE_DIR}}/{{.AUTHINATOR_DIR}}/.venv/bin/python" \
+              "{{.BASE_DIR}}/{{.AUTHINATOR_DIR}}/backend/manage.py" \
+              createsuperuser --noinput --username admin --email admin@example.com 2>/dev/null || true
+          fi
+
+          echo "🌱 Seeding $inator_dir..."
+          cd "{{.BASE_DIR}}/$inator_dir" && task backend:manage -- seed_demo
+
+          # Save as demo DB and restore active
+          mv "$DB" "$DEMO"
+          if [ -f "$USER_BAK" ]; then
+            mv "$USER_BAK" "$DB"
+          fi
+          echo ""
+        done
+        echo "✅ Demo databases built!"
+        echo ""
+        echo "  Authinator: backend/db-demo.sqlite3"
+        echo "  RMAinator:  backend/db-demo.sqlite3"
+        echo "  Fulfilinator: backend/db-demo.sqlite3"
+        echo ""
+        echo "Run 'task demodb:activate' to switch to demo data."
+        echo "Run 'task demodb:deactivate' to restore your real data."
+
+  demodb:activate:
+    desc: Swap active databases to demo data (backs up current DBs)
+    cmds:
+      - |
+        echo "Activating demo databases..."
+        for inator_dir in "{{.AUTHINATOR_DIR}}" "{{.RMAINATOR_DIR}}" "{{.FULFILINATOR_DIR}}"; do
+          DB="{{.BASE_DIR}}/$inator_dir/backend/db.sqlite3"
+          DEMO="{{.BASE_DIR}}/$inator_dir/backend/db-demo.sqlite3"
+          BAK="{{.BASE_DIR}}/$inator_dir/backend/db.sqlite3.bak"
+
+          if [ ! -f "$DEMO" ]; then
+            echo "⚠ $inator_dir: no demo DB found — run 'task setup:demodb' first"
+            continue
+          fi
+          if [ -f "$BAK" ]; then
+            echo "⚠ $inator_dir: backup already exists — already activated?"
+            continue
+          fi
+
+          if [ -f "$DB" ]; then
+            mv "$DB" "$BAK"
+          fi
+          cp "$DEMO" "$DB"
+          echo "✓ $inator_dir: demo DB active"
+        done
+        echo ""
+        echo "Demo data is now active. Restart services to pick it up:"
+        echo "  task restart:all"
+        echo ""
+        echo "Login: admin / admin123 (or any demo user with demo123)"
+
+  demodb:deactivate:
+    desc: Restore original databases (removes demo swap)
+    cmds:
+      - |
+        echo "Restoring original databases..."
+        for inator_dir in "{{.AUTHINATOR_DIR}}" "{{.RMAINATOR_DIR}}" "{{.FULFILINATOR_DIR}}"; do
+          DB="{{.BASE_DIR}}/$inator_dir/backend/db.sqlite3"
+          BAK="{{.BASE_DIR}}/$inator_dir/backend/db.sqlite3.bak"
+
+          if [ ! -f "$BAK" ]; then
+            echo "⚠ $inator_dir: no backup found — demo not active?"
+            continue
+          fi
+
+          mv "$BAK" "$DB"
+          echo "✓ $inator_dir: original DB restored"
+        done
+        echo ""
+        echo "Original data restored. Restart services to pick it up:"
+        echo "  task restart:all"
+
   # ─── Logs ───────────────────────────────────────────
 
   logs:
