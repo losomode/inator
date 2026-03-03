@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import apiClient, { getToken, clearToken } from '../api/client';
+import apiClient, { getToken, setToken, clearToken } from '../api/client';
 import type { User } from '../types';
 
 /** Shape of the auth context value. */
@@ -57,9 +57,34 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     setUser(null);
   }, []);
 
-  useEffect(() => {
-    void fetchUser();
+  /**
+   * Capture SSO token from URL parameter after OAuth redirect.
+   * The backend redirects to /?token=ACCESS_TOKEN after successful SSO login.
+   */
+  const captureTokenFromUrl = useCallback((): void => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    
+    if (token) {
+      // Save token to localStorage
+      setToken(token);
+      
+      // Remove token from URL to avoid exposing it
+      const url = new URL(window.location.href);
+      url.searchParams.delete('token');
+      window.history.replaceState({}, '', url.toString());
+      
+      // Fetch user info with the new token
+      void fetchUser();
+    }
   }, [fetchUser]);
+
+  useEffect(() => {
+    // First check for SSO token in URL
+    captureTokenFromUrl();
+    // Then fetch user if token exists in localStorage
+    void fetchUser();
+  }, [fetchUser, captureTokenFromUrl]);
 
   const isAdmin = user?.role === 'ADMIN';
   const isAuthenticated = user !== null;
