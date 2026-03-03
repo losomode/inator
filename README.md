@@ -93,6 +93,7 @@ Authinator owns the role definitions. Every other inator reads the role from the
 
 ### Prerequisites
 - [Task](https://taskfile.dev/) — `brew install go-task`
+- [Caddy](https://caddyserver.com/) — `brew install caddy`
 - Python 3.11+
 - Node.js 18+
 - Git (configured for SSH)
