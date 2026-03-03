@@ -33,6 +33,7 @@ tasks:
       - task: setup:authinator
       - task: setup:rmainator
       - task: setup:fulfilinator
+      - task: frontend:install
       - task: setup:admin
       - echo ""
       - echo "✅ Setup complete! All inators are ready."
