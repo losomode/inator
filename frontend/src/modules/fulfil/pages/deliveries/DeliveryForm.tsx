@@ -400,15 +400,6 @@ export function DeliveryForm(): React.JSX.Element {
 
                       {group.items.map((lineItem, iIdx) => {
                         const fi = flatIdx(gIdx, iIdx);
-                        const linkedItem = lineItem.order_line_item
-                          ? items.find(
-                              (i) =>
-                                i.id ===
-                                selectedOrder?.line_items.find(
-                                  (oli) => oli.id === lineItem.order_line_item,
-                                )?.item,
-                            )
-                          : null;
                         return (
                           <div
                             key={iIdx}
@@ -446,18 +437,7 @@ export function DeliveryForm(): React.JSX.Element {
                             <div
                               className={`grid gap-3 ${lineItem.order_line_item ? 'grid-cols-3' : 'grid-cols-4'}`}
                             >
-                              {lineItem.order_line_item ? (
-                                <div>
-                                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                                    Item
-                                  </label>
-                                  <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
-                                    {linkedItem
-                                      ? `${linkedItem.name} ${linkedItem.version ?? ''}`.trim()
-                                      : `Item #${String(lineItem.item)}`}
-                                  </div>
-                                </div>
-                              ) : (
+                              {!lineItem.order_line_item && (
                                 <div>
                                   <label className="mb-1 block text-sm font-medium text-gray-700">
                                     Item
