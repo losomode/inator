@@ -195,7 +195,7 @@ tasks:
         cd "{{.BASE_DIR}}/{{.FULFILINATOR_DIR}}" && task backend:manage -- register_service 2>/dev/null || echo "   ⚠ Fulfilinator registration failed (is Authinator running?)"
 
   start:authinator:
-    desc: Start Authinator (backend :8001, frontend :3001)
+    desc: "(standalone) Start Authinator backend + frontend (:8001, :3001)"
     cmds:
       - task: _start
         vars:
@@ -205,7 +205,7 @@ tasks:
           FRONTEND_PORT: "3001"
 
   start:rmainator:
-    desc: Start RMAinator (backend :8002, frontend :3002)
+    desc: "(standalone) Start RMAinator backend + frontend (:8002, :3002)"
     cmds:
       - task: _start
         vars:
@@ -215,7 +215,7 @@ tasks:
           FRONTEND_PORT: "3002"
 
   start:fulfilinator:
-    desc: Start Fulfilinator (backend :8003, frontend :3003)
+    desc: "(standalone) Start Fulfilinator backend + frontend (:8003, :3003)"
     cmds:
       - task: _start
         vars:
@@ -267,25 +267,35 @@ tasks:
       - task: status
 
   stop:authinator:
-    desc: Stop Authinator
+    desc: Stop Authinator backend
     cmds:
-      - task: _stop
-        vars: { NAME: Authinator, BACKEND_PORT: "8001", FRONTEND_PORT: "3001" }
+      - task: _stop_backend
+        vars: { NAME: Authinator, BACKEND_PORT: "8001" }
 
   stop:rmainator:
-    desc: Stop RMAinator
+    desc: Stop RMAinator backend
     cmds:
-      - task: _stop
-        vars: { NAME: RMAinator, BACKEND_PORT: "8002", FRONTEND_PORT: "3002" }
+      - task: _stop_backend
+        vars: { NAME: RMAinator, BACKEND_PORT: "8002" }
 
   stop:fulfilinator:
-    desc: Stop Fulfilinator
+    desc: Stop Fulfilinator backend
     cmds:
-      - task: _stop
-        vars: { NAME: Fulfilinator, BACKEND_PORT: "8003", FRONTEND_PORT: "3003" }
+      - task: _stop_backend
+        vars: { NAME: Fulfilinator, BACKEND_PORT: "8003" }
+
+  _stop_backend:
+    internal: true
+    requires:
+      vars: [NAME, BACKEND_PORT]
+    cmds:
+      - |
+        echo "⏹  Stopping {{.NAME}} backend..."
+        pkill -f "manage.py runserver {{.BACKEND_PORT}}" 2>/dev/null || true
 
   _stop:
     internal: true
+    desc: "(legacy) Stop both backend and per-inator frontend"
     requires:
       vars: [NAME, BACKEND_PORT, FRONTEND_PORT]
     cmds:
@@ -332,12 +342,21 @@ tasks:
     cmds:
       - |
         echo ""
-        echo "Port status:"
-        for port in 8080 5173 8001 3001 8002 3002 8003 3003; do
+        echo "Port status (unified gateway mode):"
+        echo "  Gateway & Frontend:"
+        for port in 8080 5173; do
           if lsof -iTCP:$port -sTCP:LISTEN -P >/dev/null 2>&1; then
-            echo "  :$port ✓"
+            printf "    :%-5s ✓\n" $port
           else
-            echo "  :$port ✗"
+            printf "    :%-5s ✗\n" $port
+          fi
+        done
+        echo "  Backends:"
+        for port in 8001 8002 8003; do
+          if lsof -iTCP:$port -sTCP:LISTEN -P >/dev/null 2>&1; then
+            printf "    :%-5s ✓\n" $port
+          else
+            printf "    :%-5s ✗\n" $port
           fi
         done
         echo ""
