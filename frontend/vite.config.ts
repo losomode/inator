@@ -15,6 +15,13 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     open: false,
+    // Allow deployment domain and bare variant for external deployments
+    allowedHosts: process.env.VITE_DEPLOY_DOMAIN
+      ? [
+          process.env.VITE_DEPLOY_DOMAIN,
+          process.env.VITE_DEPLOY_DOMAIN.replace(/^www\./, ''),
+        ]
+      : [],
   },
   build: {
     outDir: 'dist',
