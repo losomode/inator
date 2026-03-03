@@ -4,6 +4,18 @@
 # Routes all traffic through a single port (8080).
 # API requests are proxied to the appropriate backend by path prefix.
 # Everything else goes to the Vite dev server.
+#
+# For production deployment with a www subdomain:
+# Add a bare domain redirect block before the main site block:
+#
+# example.com {
+#     redir https://www.example.com{uri} permanent
+# }
+#
+# Then change :8080 to your deployment domain:
+# www.example.com {
+#     # ... rest of config
+# }
 
 :8080 {
 	# Authinator backend
