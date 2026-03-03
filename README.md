@@ -110,11 +110,18 @@ git clone git@github.com:losomode/FULFILinator.git Fulfilinator
 # 2. Run first-time setup (installs deps, creates .env, migrates, creates admin)
 task setup
 
-# 3. Start everything
+# 3. Start everything (backends + unified frontend + gateway)
 task start:all
 ```
 
 Setup will prompt to create a default admin user (`admin` / `admin@example.com` / `admin123`). You can skip this and create one manually later with `cd Authinator && task backend:manage -- createsuperuser`.
+
+The `setup` task automatically:
+- Installs all dependencies (Python + Node.js)
+- Creates `.env` files from examples
+- Runs database migrations
+- Prompts for admin user creation
+- Registers services with Authinator
 
 **Access the platform:** http://localhost:8080
 
@@ -155,6 +162,12 @@ task demodb:activate
 # Restart services to pick up the new DBs
 task restart:all
 ```
+
+**Demo Data Includes:**
+- 3 companies with realistic business profiles
+- 6 users across different roles (admin + customer users)
+- Complete fulfillment pipeline (items, POs, orders, deliveries with serial numbers)
+- RMA workflows in various states (submitted, approved, diagnosed, etc.)
 
 Log in as `admin` / `admin123` or any demo user with password `demo123`:
 
@@ -235,8 +248,9 @@ See [INATOR.md](./INATOR.md) for the full standards and conventions.
 
 | Layer | Technology |
 |-------|-----------|
+| Gateway | Caddy 2.x (reverse proxy) |
 | Backend | Python 3.11+, Django 6.x, Django REST Framework |
-| Frontend | TypeScript (strict), React, Vite, Tailwind CSS |
+| Frontend | TypeScript (strict), React 19, Vite, Tailwind CSS |
 | Auth | JWT (simplejwt), Google SSO, WebAuthn/passkeys |
 | Testing | pytest + coverage (backend), Vitest (frontend) |
 | Task Runner | [Task](https://taskfile.dev/) |
