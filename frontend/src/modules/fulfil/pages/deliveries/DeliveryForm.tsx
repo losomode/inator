@@ -400,6 +400,15 @@ export function DeliveryForm(): React.JSX.Element {
 
                       {group.items.map((lineItem, iIdx) => {
                         const fi = flatIdx(gIdx, iIdx);
+                        const linkedItem = lineItem.order_line_item
+                          ? items.find(
+                              (i) =>
+                                i.id ===
+                                selectedOrder?.line_items.find(
+                                  (oli) => oli.id === lineItem.order_line_item,
+                                )?.item,
+                            )
+                          : null;
                         return (
                           <div
                             key={iIdx}
@@ -408,7 +417,7 @@ export function DeliveryForm(): React.JSX.Element {
                             {selectedOrder && (
                               <div className="mb-2">
                                 <label className="mb-1 block text-sm font-medium text-gray-700">
-                                  Item Type *
+                                  Order Line Item *
                                 </label>
                                 <select
                                   value={lineItem.order_line_item ?? ''}
@@ -422,7 +431,7 @@ export function DeliveryForm(): React.JSX.Element {
                                   className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
                                   data-testid={`item-type-${String(gIdx)}-${String(iIdx)}`}
                                 >
-                                  <option value="">Select item type…</option>
+                                  <option value="">Select order line item…</option>
                                   {selectedOrder.line_items.map((oli) => (
                                     <option key={oli.id} value={oli.id}>
                                       {oli.item_name ??
@@ -434,32 +443,51 @@ export function DeliveryForm(): React.JSX.Element {
                                 </select>
                               </div>
                             )}
-                            <div className="grid grid-cols-4 gap-3">
-                              <div>
-                                <label className="mb-1 block text-sm font-medium text-gray-700">
-                                  Item
-                                </label>
-                                <select
-                                  value={lineItem.item}
-                                  onChange={(e) =>
-                                    updateItemInGroup(gIdx, iIdx, 'item', parseInt(e.target.value))
-                                  }
-                                  className={`w-full rounded border px-3 py-2 ${fieldErrors[`line_items[${String(fi)}].item`] ? 'border-red-500' : 'border-gray-300'}`}
-                                  disabled={!!lineItem.order_line_item}
-                                >
-                                  <option value={0}>Select item…</option>
-                                  {items.map((item) => (
-                                    <option key={item.id} value={item.id}>
-                                      {item.name} {item.version}
-                                    </option>
-                                  ))}
-                                </select>
-                                {fieldErrors[`line_items[${String(fi)}].item`] && (
-                                  <p className="mt-1 text-sm text-red-600">
-                                    {fieldErrors[`line_items[${String(fi)}].item`]}
-                                  </p>
-                                )}
-                              </div>
+                            <div
+                              className={`grid gap-3 ${lineItem.order_line_item ? 'grid-cols-3' : 'grid-cols-4'}`}
+                            >
+                              {lineItem.order_line_item ? (
+                                <div>
+                                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                                    Item
+                                  </label>
+                                  <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                                    {linkedItem
+                                      ? `${linkedItem.name} ${linkedItem.version ?? ''}`.trim()
+                                      : `Item #${String(lineItem.item)}`}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                                    Item
+                                  </label>
+                                  <select
+                                    value={lineItem.item}
+                                    onChange={(e) =>
+                                      updateItemInGroup(
+                                        gIdx,
+                                        iIdx,
+                                        'item',
+                                        parseInt(e.target.value),
+                                      )
+                                    }
+                                    className={`w-full rounded border px-3 py-2 ${fieldErrors[`line_items[${String(fi)}].item`] ? 'border-red-500' : 'border-gray-300'}`}
+                                  >
+                                    <option value={0}>Select item…</option>
+                                    {items.map((item) => (
+                                      <option key={item.id} value={item.id}>
+                                        {item.name} {item.version}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  {fieldErrors[`line_items[${String(fi)}].item`] && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                      {fieldErrors[`line_items[${String(fi)}].item`]}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
                               <div>
                                 <label className="mb-1 block text-sm font-medium text-gray-700">
                                   Serial Number *

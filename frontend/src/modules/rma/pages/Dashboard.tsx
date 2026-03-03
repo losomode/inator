@@ -101,7 +101,7 @@ function RMAView({ rmas, viewMode }: { rmas: RMA[]; viewMode: ViewMode }): React
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const toggleGroup = (groupId: string): void => {
-    setExpandedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
+    setExpandedGroups((prev) => ({ ...prev, [groupId]: prev[groupId] === false }));
   };
 
   if (viewMode === 'byGroup') {

@@ -26,11 +26,11 @@ describe('AdminToolsNav', () => {
     expect(screen.getByText('📊 Dashboard').closest('a')).toHaveAttribute('href', '/rma/admin');
     expect(screen.getByText('📋 Manage RMAs').closest('a')).toHaveAttribute(
       'href',
-      '/rma/admin/rmas',
+      '/rma/admin/manage',
     );
     expect(screen.getByText('⚙️ Stale Config').closest('a')).toHaveAttribute(
       'href',
-      '/rma/admin/config',
+      '/rma/admin/stale-config',
     );
   });
 });

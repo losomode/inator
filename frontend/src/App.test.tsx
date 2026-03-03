@@ -178,9 +178,7 @@ describe('App routing', () => {
     renderApp('/rma');
     await waitFor(() => expect(screen.getByText('Dashboard')).toBeInTheDocument());
     expect(screen.getByText('Create RMA')).toBeInTheDocument();
-    expect(screen.getByText('Admin Dashboard')).toBeInTheDocument();
-    expect(screen.getByText('RMA Management')).toBeInTheDocument();
-    expect(screen.getByText('Stale Config')).toBeInTheDocument();
+    expect(screen.getByText('Admin Tools')).toBeInTheDocument();
   });
 
   it('hides admin nav items for non-admin users', async () => {
@@ -192,8 +190,7 @@ describe('App routing', () => {
     renderApp('/rma');
     await waitFor(() => expect(screen.getByText('Dashboard')).toBeInTheDocument());
     expect(screen.getByText('Create RMA')).toBeInTheDocument();
-    expect(screen.queryByText('Admin Dashboard')).not.toBeInTheDocument();
-    expect(screen.queryByText('RMA Management')).not.toBeInTheDocument();
+    expect(screen.queryByText('Admin Tools')).not.toBeInTheDocument();
   });
 
   it('redirects non-admin from admin-only route to /', async () => {

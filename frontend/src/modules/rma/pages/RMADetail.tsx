@@ -183,12 +183,14 @@ export function RMADetail(): React.JSX.Element {
     return (
       <div>
         <div className="mb-4 rounded-md bg-red-50 p-4 text-red-700">{error || 'RMA not found'}</div>
-        <button
-          onClick={() => navigate('/rma')}
-          className="rounded-md bg-gray-500 px-5 py-2 text-sm font-medium text-white"
-        >
-          Back to Dashboard
-        </button>
+        <div className="flex justify-end">
+          <button
+            onClick={() => navigate('/rma')}
+            className="rounded-md bg-gray-500 px-5 py-2 text-sm font-medium text-white"
+          >
+            Back to Dashboard
+          </button>
+        </div>
       </div>
     );
   }
@@ -196,7 +198,7 @@ export function RMADetail(): React.JSX.Element {
   return (
     <div>
       {/* Back button */}
-      <div className="mb-6">
+      <div className="mb-6 flex justify-end">
         <button
           onClick={() => navigate('/rma')}
           className="rounded-md bg-gray-500 px-5 py-2 text-sm font-medium text-white hover:bg-gray-600"

@@ -179,6 +179,42 @@ describe('Dashboard', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/rma/7');
   });
 
+  it('collapses and expands group in group view', async () => {
+    const { rmaApi } = await import('../api');
+    vi.mocked(rmaApi.list).mockResolvedValue([
+      {
+        id: 1,
+        rma_number: '001',
+        serial_number: 'SN-1',
+        state: 'SUBMITTED',
+        priority: 'NORMAL',
+        group_id: 10,
+        fault_notes: '',
+        first_ship_date: null,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+        is_archived: false,
+      },
+    ]);
+
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByText('RMA #001')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('By RMA Group'));
+    expect(screen.getByText('RMA #001')).toBeInTheDocument();
+
+    // Collapse the group
+    fireEvent.click(screen.getByLabelText('Collapse group'));
+    expect(screen.queryByText('RMA #001')).not.toBeInTheDocument();
+
+    // Expand again
+    fireEvent.click(screen.getByLabelText('Expand group'));
+    expect(screen.getByText('RMA #001')).toBeInTheDocument();
+  });
+
   it('shows archived date for completed RMAs', async () => {
     const { rmaApi } = await import('../api');
     vi.mocked(rmaApi.list).mockResolvedValue([

@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './shared/auth/AuthProvider';
 import { ProtectedRoute } from './shared/auth/ProtectedRoute';
 import { Layout } from './shared/layout/Layout';
@@ -86,9 +86,7 @@ const SerialSearch = lazy(() =>
 const rmaNavItems: NavItem[] = [
   { path: '/rma', label: 'Dashboard' },
   { path: '/rma/new', label: 'Create RMA' },
-  { path: '/rma/admin', label: 'Admin Dashboard', adminOnly: true },
-  { path: '/rma/admin/manage', label: 'RMA Management', adminOnly: true },
-  { path: '/rma/admin/stale-config', label: 'Stale Config', adminOnly: true },
+  { path: '/rma/admin', label: 'Admin Tools', adminOnly: true },
 ];
 
 const fulfilNavItems: NavItem[] = [
@@ -212,6 +210,7 @@ function App(): React.JSX.Element {
             />
 
             {/* Fulfil module (protected) */}
+            <Route path="/fulfil" element={<Navigate to="/fulfil/items" replace />} />
             <Route
               path="/fulfil/items"
               element={
