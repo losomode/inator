@@ -25,16 +25,11 @@ This spec adds a Docker Compose layer on top of that, containerizing every
 component while keeping the existing native workflow available.
 ### Workspace Prerequisite
 
-The compose examples in this document assume the service repos are checked out
-as sibling directories under the platform root:
-
-- `./Authinator`
-- `./RMAinator`
-- `./Fulfilinator`
-
-If your workspace layout is different, update each compose `build.context` and
-bind-mount path accordingly (or use env-substituted paths like
-`${AUTHINATOR_PATH}`, `${RMAINATOR_PATH}`, `${FULFILINATOR_PATH}`).
+The service repos are registered as **git submodules** of the `inator` platform
+repo. A `git clone --recurse-submodules` automatically checks them out at the
+correct paths (`./Authinator`, `./RMAinator`, `./Fulfilinator`), which is
+exactly what the compose `build.context` values reference. No manual repo
+cloning required.
 
 ### Services to Containerize
 

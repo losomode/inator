@@ -101,12 +101,12 @@ Authinator owns the role definitions. Every other inator reads the role from the
 ### Installation
 
 ```bash
-# 1. Clone the platform and all inators
-git clone git@github.com:losomode/inator.git
+# 1. Clone the platform and all service repos in one step
+git clone --recurse-submodules https://github.com/losomode/inator.git
 cd inator
-git clone git@github.com:losomode/AUTHinator.git Authinator
-git clone git@github.com:losomode/RMAinator.git RMAinator
-git clone git@github.com:losomode/FULFILinator.git Fulfilinator
+
+# If you already cloned without --recurse-submodules:
+git submodule update --init --recursive
 
 # 2. Run first-time setup (installs deps, creates .env, migrates, creates admin)
 task setup
@@ -263,9 +263,9 @@ This repo (`inator`) is the **platform hub** — it contains the unified fronten
 
 ```
 inator/                  ← You are here (platform repo)
-├── Authinator/          ← git@github.com:losomode/AUTHinator.git
-├── RMAinator/           ← git@github.com:losomode/RMAinator.git
-├── Fulfilinator/        ← git@github.com:losomode/FULFILinator.git
+├── Authinator/          ← git submodule: github.com/losomode/AUTHinator
+├── RMAinator/           ← git submodule: github.com/losomode/RMAinator
+├── Fulfilinator/        ← git submodule: github.com/losomode/FULFILinator
 ├── frontend/            ← Unified React SPA (all inator UIs)
 ├── Caddyfile.dev        ← Dev gateway config (routes :8080)
 ├── Taskfile.yml         ← Platform-level task runner
