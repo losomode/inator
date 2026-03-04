@@ -23,6 +23,18 @@ for consistent, reproducible development and production deployments.
 The platform currently runs as native processes orchestrated by `Taskfile.yml`.
 This spec adds a Docker Compose layer on top of that, containerizing every
 component while keeping the existing native workflow available.
+### Workspace Prerequisite
+
+The compose examples in this document assume the service repos are checked out
+as sibling directories under the platform root:
+
+- `./Authinator`
+- `./RMAinator`
+- `./Fulfilinator`
+
+If your workspace layout is different, update each compose `build.context` and
+bind-mount path accordingly (or use env-substituted paths like
+`${AUTHINATOR_PATH}`, `${RMAINATOR_PATH}`, `${FULFILINATOR_PATH}`).
 
 ### Services to Containerize
 
@@ -166,7 +178,7 @@ services:
 
   authinator:
     build:
-      context: ./Authinator
+      context: ./Authinator   # assumes repo exists at platform root
       target: dev
     env_file: ./Authinator/backend/.env
     volumes:
@@ -178,7 +190,7 @@ services:
 
   rmainator:
     build:
-      context: ./RMAinator
+      context: ./RMAinator    # assumes repo exists at platform root
       target: dev
     env_file: ./RMAinator/backend/.env
     volumes:
@@ -192,7 +204,7 @@ services:
 
   fulfilinator:
     build:
-      context: ./Fulfilinator
+      context: ./Fulfilinator # assumes repo exists at platform root
       target: dev
     env_file: ./Fulfilinator/backend/.env
     volumes:
@@ -236,7 +248,7 @@ services:
 
   authinator:
     build:
-      context: ./Authinator
+      context: ./Authinator   # assumes repo exists at platform root
       target: prod
     env_file: ./Authinator/backend/.env.prod
     volumes:
@@ -247,7 +259,7 @@ services:
 
   rmainator:
     build:
-      context: ./RMAinator
+      context: ./RMAinator    # assumes repo exists at platform root
       target: prod
     env_file: ./RMAinator/backend/.env.prod
     volumes:
@@ -260,7 +272,7 @@ services:
 
   fulfilinator:
     build:
-      context: ./Fulfilinator
+      context: ./Fulfilinator # assumes repo exists at platform root
       target: prod
     env_file: ./Fulfilinator/backend/.env.prod
     volumes:
