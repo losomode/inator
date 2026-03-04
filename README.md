@@ -184,6 +184,41 @@ task docker:migrate       # Re-run migrations (after model changes)
 task docker:status        # Show container status
 ```
 
+### Docker Production Deployment
+
+Requires a server with Docker, a domain pointing at it, and ports 80/443 open.
+
+```bash
+# 1. Create production .env files
+cp Authinator/backend/.env.prod.example Authinator/backend/.env.prod
+cp RMAinator/backend/.env.prod.example RMAinator/backend/.env.prod
+cp Fulfilinator/backend/.env.prod.example Fulfilinator/backend/.env.prod
+# Edit each .env.prod: set SECRET_KEY, ALLOWED_HOSTS, SMTP, etc.
+
+# 2. Set your domain and TLS email (used by Caddy for auto-TLS via Let's Encrypt)
+export DEPLOY_DOMAIN=yourapp.com
+export CADDY_ACME_EMAIL=you@yourapp.com
+
+# 3. Build all images (backends at prod target, Caddy with frontend baked in)
+task docker:prod:build
+
+# 4. Start the production stack
+task docker:prod:up
+```
+
+**What’s different from dev:**
+- Backends run **gunicorn** (4 workers) instead of Django’s dev server
+- The **React frontend is compiled and baked into the Caddy image** — no separate frontend container
+- **TLS is automatic** — Caddy obtains a Let’s Encrypt certificate on first startup
+- No source code bind-mounts — code is baked into the images
+
+Useful commands:
+```bash
+task docker:prod:logs     # Tail production logs
+task docker:prod:down     # Stop the production stack
+task docker:prod:migrate  # Force-run migrations (normally auto on startup)
+```
+
 ### Demo Database
 
 Want to see the platform in action with realistic data? The demo database includes 3 companies, 6 users, items, purchase orders, orders, deliveries, and RMAs across various states.
@@ -262,6 +297,7 @@ task docker:status        # Show container status
 task docker:build         # Rebuild images without starting
 
 # Docker (prod)
+task docker:prod:build    # Build production images (gunicorn + frontend baked into Caddy)
 task docker:prod:up       # Start production stack
 task docker:prod:down     # Stop production stack
 task docker:prod:migrate  # Run production migrations
