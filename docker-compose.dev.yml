@@ -26,6 +26,7 @@ services:
     build:
       context: ./Authinator
       target: dev
+    command: sh -c "python backend/manage.py migrate --noinput && python backend/manage.py runserver 0.0.0.0:8001"
     env_file: ./Authinator/backend/.env
     volumes:
       - ./Authinator/backend:/app/backend
@@ -38,6 +39,7 @@ services:
     build:
       context: ./RMAinator
       target: dev
+    command: sh -c "python backend/manage.py migrate --noinput && python backend/manage.py runserver 0.0.0.0:8002"
     env_file: ./RMAinator/backend/.env
     volumes:
       - ./RMAinator/backend:/app/backend
@@ -53,6 +55,7 @@ services:
     build:
       context: ./Fulfilinator
       target: dev
+    command: sh -c "python backend/manage.py migrate --noinput && python backend/manage.py runserver 0.0.0.0:8003"
     env_file: ./Fulfilinator/backend/.env
     volumes:
       - ./Fulfilinator/backend:/app/backend

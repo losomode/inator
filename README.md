@@ -164,11 +164,10 @@ cp RMAinator/backend/.env.example RMAinator/backend/.env
 cp Fulfilinator/backend/.env.example Fulfilinator/backend/.env
 # Edit each .env to set SECRET_KEY (required)
 
-# 3. Build and start all containers
+# 3. Build and start all containers (migrations run automatically on startup)
 task docker:up --build    # or: docker compose -f docker-compose.dev.yml up --build
 
-# 4. First run only: apply migrations and create an admin user
-task docker:migrate
+# 4. First run only: create an admin user
 docker compose -f docker-compose.dev.yml exec authinator python backend/manage.py createsuperuser
 ```
 
