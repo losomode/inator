@@ -41,4 +41,5 @@ export interface SSOProvider {
 export const SERVICE_ROUTE_MAP: Record<string, string> = {
   RMAinator: '/rma',
   FULFILinator: '/fulfil',
+  USERinator: '/users',
 };

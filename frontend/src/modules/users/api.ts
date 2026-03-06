@@ -1,11 +1,19 @@
 import apiClient from '../../shared/api/client';
 import type { UserProfile, Company, Invitation, UserPreferences } from './types';
 
+/** Paginated response from DRF. */
+interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
 /** User profile endpoints. */
 export const usersApi = {
   list: async (params?: Record<string, string>): Promise<UserProfile[]> => {
-    const response = await apiClient.get<UserProfile[]>('/users/', { params });
-    return response.data;
+    const response = await apiClient.get<PaginatedResponse<UserProfile>>('/users/', { params });
+    return response.data.results;
   },
 
   get: async (userId: number): Promise<UserProfile> => {
@@ -42,8 +50,8 @@ export const usersApi = {
 /** Company endpoints. */
 export const companiesApi = {
   list: async (): Promise<Company[]> => {
-    const response = await apiClient.get<Company[]>('/companies/');
-    return response.data;
+    const response = await apiClient.get<PaginatedResponse<Company>>('/companies/');
+    return response.data.results;
   },
 
   get: async (id: number): Promise<Company> => {
@@ -55,8 +63,8 @@ export const companiesApi = {
 /** Invitation endpoints. */
 export const invitationsApi = {
   list: async (params?: Record<string, string>): Promise<Invitation[]> => {
-    const response = await apiClient.get<Invitation[]>('/invitations/', { params });
-    return response.data;
+    const response = await apiClient.get<PaginatedResponse<Invitation>>('/invitations/', { params });
+    return response.data.results;
   },
 
   create: async (data: Partial<Invitation>): Promise<Invitation> => {
