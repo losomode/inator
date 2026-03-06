@@ -10,11 +10,13 @@ vars:
     authinator:8001:3001
     rmainator:8002:3002
     fulfilinator:8003:3003
+    userinator:8004:3004
 
   # Directory names (capitalized) — must match filesystem
   AUTHINATOR_DIR: Authinator
   RMAINATOR_DIR: RMAinator
   FULFILINATOR_DIR: Fulfilinator
+  USERINATOR_DIR: Userinator
 
 set: [errexit, nounset, pipefail]
 
@@ -33,6 +35,7 @@ tasks:
       - task: setup:authinator
       - task: setup:rmainator
       - task: setup:fulfilinator
+      - task: setup:userinator
       - task: frontend:install
       - task: setup:admin
       - echo ""
@@ -62,6 +65,12 @@ tasks:
     cmds:
       - task: _setup
         vars: { NAME: Fulfilinator, DIR: "{{.FULFILINATOR_DIR}}" }
+
+  setup:userinator:
+    desc: Setup USERinator
+    cmds:
+      - task: _setup
+        vars: { NAME: USERinator, DIR: "{{.USERINATOR_DIR}}" }
 
   _setup:
     internal: true
@@ -181,6 +190,8 @@ tasks:
         vars: { NAME: RMAinator, DIR: "{{.RMAINATOR_DIR}}", BACKEND_PORT: "8002" }
       - task: _start_backend
         vars: { NAME: Fulfilinator, DIR: "{{.FULFILINATOR_DIR}}", BACKEND_PORT: "8003" }
+      - task: _start_backend
+        vars: { NAME: USERinator, DIR: "{{.USERINATOR_DIR}}", BACKEND_PORT: "8004" }
       - task: frontend:start
       - task: gateway:start
       - task: register
@@ -193,6 +204,7 @@ tasks:
         echo "📋 Registering services with Authinator..."
         cd "{{.BASE_DIR}}/{{.RMAINATOR_DIR}}" && task backend:manage -- register_service 2>/dev/null || echo "   ⚠ RMAinator registration failed (is Authinator running?)"
         cd "{{.BASE_DIR}}/{{.FULFILINATOR_DIR}}" && task backend:manage -- register_service 2>/dev/null || echo "   ⚠ Fulfilinator registration failed (is Authinator running?)"
+        cd "{{.BASE_DIR}}/{{.USERINATOR_DIR}}" && task backend:manage -- register_service 2>/dev/null || echo "   ⚠ USERinator registration failed (is Authinator running?)"
 
   start:authinator:
     desc: "(standalone) Start Authinator backend + frontend (:8001, :3001)"
@@ -223,6 +235,15 @@ tasks:
           DIR: "{{.FULFILINATOR_DIR}}"
           BACKEND_PORT: "8003"
           FRONTEND_PORT: "3003"
+
+  start:userinator:
+    desc: "(standalone) Start USERinator backend (:8004)"
+    cmds:
+      - task: _start_backend
+        vars:
+          NAME: USERinator
+          DIR: "{{.USERINATOR_DIR}}"
+          BACKEND_PORT: "8004"
 
   _start_backend:
     internal: true
@@ -264,6 +285,7 @@ tasks:
       - task: stop:authinator
       - task: stop:rmainator
       - task: stop:fulfilinator
+      - task: stop:userinator
       - task: status
 
   stop:authinator:
@@ -283,6 +305,12 @@ tasks:
     cmds:
       - task: _stop_backend
         vars: { NAME: Fulfilinator, BACKEND_PORT: "8003" }
+
+  stop:userinator:
+    desc: Stop USERinator backend
+    cmds:
+      - task: _stop_backend
+        vars: { NAME: USERinator, BACKEND_PORT: "8004" }
 
   _stop_backend:
     internal: true
@@ -334,7 +362,14 @@ tasks:
       - sleep 1
       - task: start:fulfilinator
 
-  # ─── Status ─────────────────────────────────────────
+  restart:userinator:
+    desc: Restart USERinator
+    cmds:
+      - task: stop:userinator
+      - sleep 1
+      - task: start:userinator
+
+  # ─── Status
 
   status:
     desc: Check which inator ports are listening
@@ -352,7 +387,7 @@ tasks:
           fi
         done
         echo "  Backends:"
-        for port in 8001 8002 8003; do
+        for port in 8001 8002 8003 8004; do
           if lsof -iTCP:$port -sTCP:LISTEN -P >/dev/null 2>&1; then
             printf "    :%-5s ✓\n" $port
           else
@@ -372,7 +407,7 @@ tasks:
         echo "  Building demo databases"
         echo "══════════════════════════════════════════"
         echo ""
-        for inator_dir in "{{.AUTHINATOR_DIR}}" "{{.RMAINATOR_DIR}}" "{{.FULFILINATOR_DIR}}"; do
+        for inator_dir in "{{.AUTHINATOR_DIR}}" "{{.RMAINATOR_DIR}}" "{{.FULFILINATOR_DIR}}" "{{.USERINATOR_DIR}}"; do
           DB="{{.BASE_DIR}}/$inator_dir/backend/db.sqlite3"
           DEMO="{{.BASE_DIR}}/$inator_dir/backend/db-demo.sqlite3"
           USER_BAK="{{.BASE_DIR}}/$inator_dir/backend/db.sqlite3.demobuild"
@@ -387,15 +422,22 @@ tasks:
 
           # Create admin superuser (Authinator only)
           if [ "$inator_dir" = "{{.AUTHINATOR_DIR}}" ]; then
-            echo "   Creating admin superuser..."
+          echo "   Creating admin superuser..."
             DJANGO_SUPERUSER_PASSWORD=admin123 \
               "{{.BASE_DIR}}/{{.AUTHINATOR_DIR}}/.venv/bin/python" \
               "{{.BASE_DIR}}/{{.AUTHINATOR_DIR}}/backend/manage.py" \
               createsuperuser --noinput --username admin --email admin@example.com 2>/dev/null || true
           fi
 
-          echo "🌱 Seeding $inator_dir..."
-          cd "{{.BASE_DIR}}/$inator_dir" && task backend:manage -- seed_demo
+          # USERinator uses setup_demo_data instead of seed_demo
+          if [ "$inator_dir" = "{{.USERINATOR_DIR}}" ]; then
+            echo "🌱 Seeding $inator_dir..."
+            cd "{{.BASE_DIR}}/$inator_dir" && task backend:manage -- create_default_roles 2>/dev/null || true
+            cd "{{.BASE_DIR}}/$inator_dir" && task backend:manage -- setup_demo_data
+          else
+            echo "🌱 Seeding $inator_dir..."
+            cd "{{.BASE_DIR}}/$inator_dir" && task backend:manage -- seed_demo
+          fi
 
           # Save as demo DB and restore active
           mv "$DB" "$DEMO"
@@ -406,9 +448,10 @@ tasks:
         done
         echo "✅ Demo databases built!"
         echo ""
-        echo "  Authinator: backend/db-demo.sqlite3"
-        echo "  RMAinator:  backend/db-demo.sqlite3"
+        echo "  Authinator:   backend/db-demo.sqlite3"
+        echo "  RMAinator:    backend/db-demo.sqlite3"
         echo "  Fulfilinator: backend/db-demo.sqlite3"
+        echo "  USERinator:   backend/db-demo.sqlite3"
         echo ""
         echo "Run 'task demodb:activate' to switch to demo data."
         echo "Run 'task demodb:deactivate' to restore your real data."
@@ -418,7 +461,7 @@ tasks:
     cmds:
       - |
         echo "Activating demo databases..."
-        for inator_dir in "{{.AUTHINATOR_DIR}}" "{{.RMAINATOR_DIR}}" "{{.FULFILINATOR_DIR}}"; do
+        for inator_dir in "{{.AUTHINATOR_DIR}}" "{{.RMAINATOR_DIR}}" "{{.FULFILINATOR_DIR}}" "{{.USERINATOR_DIR}}"; do
           DB="{{.BASE_DIR}}/$inator_dir/backend/db.sqlite3"
           DEMO="{{.BASE_DIR}}/$inator_dir/backend/db-demo.sqlite3"
           BAK="{{.BASE_DIR}}/$inator_dir/backend/db.sqlite3.bak"
@@ -449,7 +492,7 @@ tasks:
     cmds:
       - |
         echo "Restoring original databases..."
-        for inator_dir in "{{.AUTHINATOR_DIR}}" "{{.RMAINATOR_DIR}}" "{{.FULFILINATOR_DIR}}"; do
+        for inator_dir in "{{.AUTHINATOR_DIR}}" "{{.RMAINATOR_DIR}}" "{{.FULFILINATOR_DIR}}" "{{.USERINATOR_DIR}}"; do
           DB="{{.BASE_DIR}}/$inator_dir/backend/db.sqlite3"
           BAK="{{.BASE_DIR}}/$inator_dir/backend/db.sqlite3.bak"
 
