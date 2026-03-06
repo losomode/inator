@@ -36,6 +36,11 @@ const AdminStaleConfig = lazy(() =>
   import('./modules/rma/pages/AdminStaleConfig').then((m) => ({ default: m.AdminStaleConfig })),
 );
 
+// Users module
+const UserList = lazy(() =>
+  import('./modules/users/pages/UserList').then((m) => ({ default: m.UserList })),
+);
+
 // Fulfil module
 const ItemList = lazy(() =>
   import('./modules/fulfil/pages/items/ItemList').then((m) => ({ default: m.ItemList })),
@@ -83,6 +88,10 @@ const SerialSearch = lazy(() =>
 );
 
 // -- Navigation configs --
+const usersNavItems: NavItem[] = [
+  { path: '/users', label: 'Users' },
+];
+
 const rmaNavItems: NavItem[] = [
   { path: '/rma', label: 'Dashboard' },
   { path: '/rma/new', label: 'Create RMA' },
@@ -100,6 +109,13 @@ const Loading = (): React.JSX.Element => (
   <div className="flex min-h-screen items-center justify-center">
     <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600" />
   </div>
+);
+
+/** Wrap Users pages in shared Layout with Users nav. */
+const UsersLayout = ({ children }: { children: React.ReactNode }): React.JSX.Element => (
+  <Layout title="USERinator" subtitle="User Management" navItems={usersNavItems}>
+    {children}
+  </Layout>
 );
 
 /** Wrap RMA pages in shared Layout with RMA nav. */
@@ -143,6 +159,18 @@ function App(): React.JSX.Element {
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Users module (protected, admin only) */}
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute adminOnly>
+                  <UsersLayout>
+                    <UserList />
+                  </UsersLayout>
                 </ProtectedRoute>
               }
             />

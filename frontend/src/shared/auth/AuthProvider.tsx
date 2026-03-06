@@ -36,7 +36,25 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
 
     try {
       const response = await apiClient.get<User>('/auth/me/');
-      setUser(response.data);
+      const authUser = response.data;
+
+      // Enrich with USERinator profile data (best-effort)
+      try {
+        const profileResp = await apiClient.get<{
+          role_level?: number;
+          role_name?: string;
+          display_name?: string;
+          company?: { name: string };
+        }>('/users/me/');
+        authUser.role_level = profileResp.data.role_level;
+        authUser.role_name = profileResp.data.role_name;
+        authUser.display_name = profileResp.data.display_name;
+        authUser.company_name = profileResp.data.company?.name;
+      } catch {
+        // USERinator profile not available — proceed with Authinator data only
+      }
+
+      setUser(authUser);
     } catch {
       // Token invalid — clear it, user will be redirected by interceptor
       setUser(null);
@@ -86,7 +104,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     void fetchUser();
   }, [fetchUser, captureTokenFromUrl]);
 
-  const isAdmin = user?.role === 'ADMIN';
+  const isAdmin = (user?.role_level != null && user.role_level >= 100) || user?.role === 'ADMIN';
   const isAuthenticated = user !== null;
 
   const value: AuthContextValue = {

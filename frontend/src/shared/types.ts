@@ -8,6 +8,11 @@ export interface User {
     id: number;
     name: string;
   } | null;
+  /** USERinator-enriched fields (populated from /api/users/me/) */
+  role_level?: number;
+  role_name?: string;
+  display_name?: string;
+  company_name?: string;
 }
 
 /** Successful login response with JWT tokens. */
