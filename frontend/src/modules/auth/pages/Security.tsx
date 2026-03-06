@@ -7,10 +7,10 @@ import { totpApi, webauthnApi } from '../api';
 import type { WebAuthnCredential } from '../types';
 
 /**
- * Profile & Security page.
+ * Security Settings page.
  * Uses useAuth for user data; manages TOTP + WebAuthn credentials.
  */
-export function Profile(): React.JSX.Element {
+export function Security(): React.JSX.Element {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [message, setMessage] = useState('');
@@ -165,7 +165,7 @@ export function Profile(): React.JSX.Element {
           >
             ← Back
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">🔐 Profile &amp; Security</h1>
+          <h1 className="text-2xl font-bold text-gray-900">🔐 Security Settings</h1>
         </div>
       </header>
 

@@ -59,10 +59,10 @@ export function Home(): React.JSX.Element {
                 <p className="text-xs text-gray-500">{user.customer?.name ?? user.role}</p>
               </div>
               <button
-                onClick={() => navigate('/profile')}
+                onClick={() => navigate('/security')}
                 className="rounded-lg bg-blue-50 px-4 py-2 text-sm text-blue-700 transition-colors hover:bg-blue-100"
               >
-                ⚙ Profile
+                🔒 Security
               </button>
               <button
                 onClick={logout}

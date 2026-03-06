@@ -10,8 +10,8 @@ import { Login } from './modules/auth/pages/Login';
 
 // -- Lazy-loaded module pages --
 const Home = lazy(() => import('./modules/auth/pages/Home').then((m) => ({ default: m.Home })));
-const Profile = lazy(() =>
-  import('./modules/auth/pages/Profile').then((m) => ({ default: m.Profile })),
+const Security = lazy(() =>
+  import('./modules/auth/pages/Security').then((m) => ({ default: m.Security })),
 );
 
 // RMA module
@@ -39,6 +39,36 @@ const AdminStaleConfig = lazy(() =>
 // Users module
 const UserList = lazy(() =>
   import('./modules/users/pages/UserList').then((m) => ({ default: m.UserList })),
+);
+const UserProfilePage = lazy(() =>
+  import('./modules/users/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })),
+);
+const UserProfileEditPage = lazy(() =>
+  import('./modules/users/pages/ProfileEditPage').then((m) => ({ default: m.ProfileEditPage })),
+);
+const UserCompanyPage = lazy(() =>
+  import('./modules/users/pages/CompanyPage').then((m) => ({ default: m.CompanyPage })),
+);
+const UserCompanyEditPage = lazy(() =>
+  import('./modules/users/pages/CompanyEditPage').then((m) => ({ default: m.CompanyEditPage })),
+);
+const UserInvitationReviewPage = lazy(() =>
+  import('./modules/users/pages/InvitationReviewPage').then((m) => ({ default: m.InvitationReviewPage })),
+);
+const UserInvitationRequestPage = lazy(() =>
+  import('./modules/users/pages/InvitationRequestPage').then((m) => ({ default: m.InvitationRequestPage })),
+);
+const UserPreferencesPage = lazy(() =>
+  import('./modules/users/pages/PreferencesPage').then((m) => ({ default: m.PreferencesPage })),
+);
+const UserEditPage = lazy(() =>
+  import('./modules/users/pages/UserEditPage').then((m) => ({ default: m.UserEditPage })),
+);
+const CompanyListPage = lazy(() =>
+  import('./modules/users/pages/CompanyListPage').then((m) => ({ default: m.CompanyListPage })),
+);
+const CompanyCreatePage = lazy(() =>
+  import('./modules/users/pages/CompanyCreatePage').then((m) => ({ default: m.CompanyCreatePage })),
 );
 
 // Fulfil module
@@ -89,7 +119,13 @@ const SerialSearch = lazy(() =>
 
 // -- Navigation configs --
 const usersNavItems: NavItem[] = [
-  { path: '/users', label: 'Users' },
+  { path: '/users', label: 'Users', adminOnly: true },
+  { path: '/users/companies', label: 'Companies', adminOnly: true },
+  { path: '/users/profile', label: 'My Profile' },
+  { path: '/users/company', label: 'My Company' },
+  { path: '/users/invitations', label: 'Invitations', adminOnly: true },
+  { path: '/users/invitations/new', label: 'Request Invite' },
+  { path: '/users/preferences', label: 'Preferences' },
 ];
 
 const rmaNavItems: NavItem[] = [
@@ -155,21 +191,141 @@ function App(): React.JSX.Element {
               }
             />
             <Route
-              path="/profile"
+              path="/security"
               element={
                 <ProtectedRoute>
-                  <Profile />
+                  <Security />
                 </ProtectedRoute>
               }
             />
 
-            {/* Users module (protected, admin only) */}
+            {/* Users module */}
             <Route
               path="/users"
               element={
                 <ProtectedRoute adminOnly>
                   <UsersLayout>
                     <UserList />
+                  </UsersLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/profile"
+              element={
+                <ProtectedRoute>
+                  <UsersLayout>
+                    <UserProfilePage />
+                  </UsersLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/profile/edit"
+              element={
+                <ProtectedRoute>
+                  <UsersLayout>
+                    <UserProfileEditPage />
+                  </UsersLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/company"
+              element={
+                <ProtectedRoute>
+                  <UsersLayout>
+                    <UserCompanyPage />
+                  </UsersLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/company/edit"
+              element={
+                <ProtectedRoute>
+                  <UsersLayout>
+                    <UserCompanyEditPage />
+                  </UsersLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/invitations"
+              element={
+                <ProtectedRoute adminOnly>
+                  <UsersLayout>
+                    <UserInvitationReviewPage />
+                  </UsersLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/invitations/new"
+              element={
+                <ProtectedRoute>
+                  <UsersLayout>
+                    <UserInvitationRequestPage />
+                  </UsersLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/preferences"
+              element={
+                <ProtectedRoute>
+                  <UsersLayout>
+                    <UserPreferencesPage />
+                  </UsersLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/companies"
+              element={
+                <ProtectedRoute adminOnly>
+                  <UsersLayout>
+                    <CompanyListPage />
+                  </UsersLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/companies/new"
+              element={
+                <ProtectedRoute adminOnly>
+                  <UsersLayout>
+                    <CompanyCreatePage />
+                  </UsersLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/companies/:id"
+              element={
+                <ProtectedRoute>
+                  <UsersLayout>
+                    <UserCompanyPage />
+                  </UsersLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/:id/edit"
+              element={
+                <ProtectedRoute adminOnly>
+                  <UsersLayout>
+                    <UserEditPage />
+                  </UsersLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/:id"
+              element={
+                <ProtectedRoute>
+                  <UsersLayout>
+                    <UserProfilePage />
                   </UsersLayout>
                 </ProtectedRoute>
               }

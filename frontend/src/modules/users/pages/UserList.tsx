@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usersApi } from '../api';
+import { useAuth } from '../../../shared/auth/AuthProvider';
 import type { UserProfile } from '../types';
 
 /** Badge color based on role level. */
@@ -11,6 +12,7 @@ function roleBadgeClass(level: number): string {
 }
 
 export function UserList(): React.JSX.Element {
+  const { isAdmin } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -60,6 +62,11 @@ export function UserList(): React.JSX.Element {
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
                   Company
                 </th>
+                {isAdmin && (
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                    Actions
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
@@ -82,7 +89,17 @@ export function UserList(): React.JSX.Element {
                       {u.role_name}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{u.company?.name ?? '—'}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{typeof u.company === 'object' ? u.company?.name : '—'}</td>
+                  {isAdmin && (
+                    <td className="px-4 py-3">
+                      <Link
+                        to={`/users/${String(u.user_id)}/edit`}
+                        className="text-sm text-blue-600 hover:underline"
+                      >
+                        Edit
+                      </Link>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
