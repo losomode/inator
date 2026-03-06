@@ -158,14 +158,14 @@ export function Security(): React.JSX.Element {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow">
-        <div className="mx-auto flex max-w-4xl items-center space-x-4 px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+          <h1 className="text-2xl font-bold text-gray-900">🔐 Security Settings</h1>
           <button
             onClick={() => navigate('/')}
-            className="text-gray-600 transition-colors hover:text-gray-900"
+            className="rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-200"
           >
             ← Back
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">🔐 Security Settings</h1>
         </div>
       </header>
 
