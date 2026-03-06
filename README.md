@@ -16,6 +16,7 @@ graph TB
         CADDY[🔀 Caddy Gateway<br/><i>:8080</i>]
         FE[🖥 Unified Frontend<br/><i>Vite + React :5173</i>]
         AUTH[🔐 Authinator<br/><i>Backend :8001</i>]
+        USER[👤 USERinator<br/><i>Backend :8004</i>]
 
         subgraph "Business Services"
             RMA[📦 RMAinator<br/><i>Backend :8002</i>]
@@ -27,21 +28,27 @@ graph TB
         end
     end
 
-    CADDY -->|/api/auth, /api/users, /accounts| AUTH
+    CADDY -->|/api/auth, /accounts| AUTH
+    CADDY -->|/api/users, /api/companies, /api/roles, /api/invitations| USER
     CADDY -->|/api/rma| RMA
     CADDY -->|/api/fulfil| FULFIL
     CADDY -->|everything else| FE
 
     AUTH -- JWT tokens --> RMA
     AUTH -- JWT tokens --> FULFIL
+    AUTH -- JWT tokens --> USER
     AUTH -- JWT tokens --> INV
     AUTH -- JWT tokens --> NOTIF
     AUTH -- JWT tokens --> USAGE
     AUTH -- JWT tokens --> LIC
+    AUTH -- role query --> USER
+    USER -- role_level in JWT --> RMA
+    USER -- role_level in JWT --> FULFIL
 
     style CADDY fill:#e74c3c,color:#fff
     style FE fill:#3498db,color:#fff
     style AUTH fill:#4a90d9,color:#fff
+    style USER fill:#9b59b6,color:#fff
     style RMA fill:#27ae60,color:#fff
     style FULFIL fill:#e67e22,color:#fff
     style INV fill:#95a5a6,color:#fff,stroke-dasharray: 5 5
@@ -52,7 +59,7 @@ graph TB
 
 All traffic flows through a **Caddy reverse proxy** on port 8080. API requests are routed to the appropriate backend by path prefix; everything else is served by the **unified frontend** — a single React SPA that consolidates all inator UIs.
 
-**Authinator** is the foundation — every other inator delegates authentication and user management to it via JWT. Services never store credentials; they validate tokens against Authinator's API.
+**Authinator** is the foundation — every other inator delegates authentication to it via JWT. **USERinator** is the authoritative source for user profiles, companies, and roles — Authinator enriches JWT tokens with `role_level` and `role_name` claims fetched from USERinator at login.
 
 ## Anatomy of an Inator
 
@@ -76,18 +83,22 @@ Each inator's **backend** is self-contained and independently deployable. The fr
 
 | Service | Purpose | Backend Port | API Prefix | Repo |
 |---------|---------|-------------|------------|------|
-| **Authinator** | Authentication, users, SSO, MFA | 8001 | `/api/auth`, `/api/users` | [losomode/AUTHinator](https://github.com/losomode/AUTHinator) |
+| **Authinator** | Authentication, SSO, MFA, JWT tokens | 8001 | `/api/auth` | [losomode/AUTHinator](https://github.com/losomode/AUTHinator) |
+| **USERinator** | User profiles, companies, roles, invitations | 8004 | `/api/users`, `/api/companies`, `/api/roles`, `/api/invitations` | [losomode/USERinator](https://github.com/losomode/USERinator) |
 | **RMAinator** | Return merchandise authorization tracking | 8002 | `/api/rma` | [losomode/RMAinator](https://github.com/losomode/RMAinator) |
 | **Fulfilinator** | Purchase orders, orders, deliveries | 8003 | `/api/fulfil` | [losomode/FULFILinator](https://github.com/losomode/FULFILinator) |
 
 ## Roles
 
-The platform uses two roles across all services:
+The platform uses a numeric role level system managed by USERinator:
 
-- **ADMIN** — Full access. Manage data, users, and workflows across all customers.
-- **USER** — Customer-scoped. View and interact with their own customer's data.
+| Role | Level | Access |
+|------|-------|--------|
+| **ADMIN** | 100 | Full access. Manage data, users, and workflows across all companies. |
+| **MANAGER** | 30 | Company-scoped management. View and manage company users and data. |
+| **MEMBER** | 10 | Company-scoped. View and interact with their own company's data. |
 
-Authinator owns the role definitions. Every other inator reads the role from the JWT and enforces it locally.
+Custom roles can be created with any level between 1-100. USERinator owns role definitions; Authinator enriches JWT tokens with `role_level` and `role_name` at login. All services use `role_level >= threshold` for permission checks.
 
 ## Quick Start
 
@@ -107,6 +118,7 @@ cd inator
 git clone git@github.com:losomode/AUTHinator.git Authinator
 git clone git@github.com:losomode/RMAinator.git RMAinator
 git clone git@github.com:losomode/FULFILinator.git Fulfilinator
+git clone git@github.com:losomode/USERinator.git Userinator
 
 # 2. Run first-time setup (installs deps, creates .env, migrates, creates admin)
 task setup
@@ -140,6 +152,7 @@ task status
 tail -50 logs/Authinator-backend.log
 tail -50 logs/RMAinator-backend.log
 tail -50 logs/Fulfilinator-backend.log
+tail -50 logs/USERinator-backend.log
 tail -50 logs/frontend.log
 tail -50 logs/gateway.log
 
@@ -166,7 +179,8 @@ task restart:all
 
 **Demo Data Includes:**
 - 3 companies with realistic business profiles
-- 6 users across different roles (admin + customer users)
+- 6+ users across different roles (admin, manager, member)
+- User profiles, role assignments, and invitations (USERinator)
 - Complete fulfillment pipeline (items, POs, orders, deliveries with serial numbers)
 - RMA workflows in various states (submitted, approved, diagnosed, etc.)
 
@@ -266,6 +280,7 @@ inator/                  ← You are here (platform repo)
 ├── Authinator/          ← git@github.com:losomode/AUTHinator.git
 ├── RMAinator/           ← git@github.com:losomode/RMAinator.git
 ├── Fulfilinator/        ← git@github.com:losomode/FULFILinator.git
+├── Userinator/          ← git@github.com:losomode/USERinator.git
 ├── frontend/            ← Unified React SPA (all inator UIs)
 ├── Caddyfile.dev        ← Dev gateway config (routes :8080)
 ├── Taskfile.yml         ← Platform-level task runner

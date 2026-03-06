@@ -15,7 +15,8 @@
 
 ### 1.3 API Paths
 - MUST follow pattern: `/api/{concept}/` (lowercase)
-- Authinator: `/api/auth/`, `/api/users/`, `/api/services/`
+- Authinator: `/api/auth/`, `/api/services/`
+- USERinator: `/api/users/`, `/api/companies/`, `/api/roles/`, `/api/invitations/`
 - RMAinator: `/api/rma/`
 - FULFILinator: `/api/fulfil/`
 - MUST NOT use version numbers in path (no `/api/v1/`)
