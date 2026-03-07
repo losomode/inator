@@ -394,7 +394,7 @@ function App(): React.JSX.Element {
             />
 
             {/* Fulfil module (protected) */}
-            <Route path="/fulfil" element={<Navigate to="/fulfil/items" replace />} />
+            <Route path="/fulfil" element={<Navigate to="/fulfil/pos" replace />} />
             <Route
               path="/fulfil/items"
               element={
