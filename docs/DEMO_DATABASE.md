@@ -12,9 +12,15 @@ task setup:demodb
 
 # 2. Activate demo data (backs up your current databases)
 task demodb:activate
+
+# 3. Set up OAuth providers (if you have credentials in .env)
+cd Authinator/backend && ../../Authinator/.venv/bin/python manage.py setup_sso
+cd ../..
+
+# 4. Restart services to pick up demo data
 task restart:all
 
-# 3. When done, restore your original data
+# 5. When done, restore your original data
 task demodb:deactivate
 task restart:all
 ```
