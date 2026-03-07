@@ -135,7 +135,7 @@ const rmaNavItems: NavItem[] = [
 ];
 
 const fulfilNavItems: NavItem[] = [
-  { path: '/fulfil/items', label: 'Items' },
+  { path: '/fulfil/items', label: 'Items', adminOnly: true },
   { path: '/fulfil/pos', label: 'Purchase Orders' },
   { path: '/fulfil/orders', label: 'Orders' },
   { path: '/fulfil/deliveries', label: 'Deliveries' },
