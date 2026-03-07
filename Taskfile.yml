@@ -398,6 +398,38 @@ tasks:
 
   # ─── Demo Database ───────────────────────────────────
 
+  demo:reset:
+    desc: Purge all databases and recreate fresh schemas
+    cmds:
+      - |
+        echo "⚠️  WARNING: This will DELETE ALL DATA in all databases!"
+        printf "Are you sure you want to continue? [y/N] "
+        read -r answer </dev/tty
+        case "$answer" in
+          [yY]*)
+            "{{.BASE_DIR}}/scripts/purge_databases.sh"
+            ;;
+          *)
+            echo "Cancelled."
+            exit 1
+            ;;
+        esac
+
+  demo:seed:
+    desc: Populate databases with comprehensive demo data
+    cmds:
+      - "{{.BASE_DIR}}/scripts/seed_demo.sh"
+
+  demo:full:
+    desc: Complete demo reset - purge databases and reseed with demo data
+    cmds:
+      - task: demo:reset
+      - task: demo:seed
+      - echo ""
+      - echo "🎉 Demo environment ready!"
+      - echo "   Restart services to use the new data:"
+      - echo "   task restart:all"
+
   setup:demodb:
     desc: Build demo databases with sample data (does NOT touch active DBs)
     cmds:
