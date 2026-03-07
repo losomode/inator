@@ -164,35 +164,45 @@ task start:all          # Start again
 
 ### Demo Database
 
-Want to see the platform in action with realistic data? The demo database includes 3 companies, 6 users, items, purchase orders, orders, deliveries, and RMAs across various states.
+Want to see the platform in action with realistic data? The demo database includes 4 companies, 12 users with full RBAC hierarchy, 6 catalog items, and sample fulfillment/RMA data.
 
 ```bash
-# Build the demo databases (does NOT touch your active data)
+# 1. Build the demo databases (does NOT touch your active data)
 task setup:demodb
 
-# Switch to demo data
+# 2. Switch to demo data (backs up your current databases)
 task demodb:activate
 
-# Restart services to pick up the new DBs
+# 3. Set up OAuth providers (if you have credentials in .env)
+cd Authinator/backend && ../../Authinator/.venv/bin/python manage.py setup_sso
+cd ../..
+
+# 4. Restart services to pick up the new DBs
 task restart:all
 ```
 
 **Demo Data Includes:**
-- 3 companies with realistic business profiles
-- 6+ users across different roles (admin, manager, member)
-- User profiles, role assignments, and invitations (USERinator)
-- Complete fulfillment pipeline (items, POs, orders, deliveries with serial numbers)
-- RMA workflows in various states (submitted, approved, diagnosed, etc.)
+- **4 companies**: Acme Corporation, Globex Industries, Initech LLC, Wayne Enterprises
+- **12 users**: 2 platform admins, 10 company users (managers and members)
+- **6 catalog items**: Security cameras, sensors, locks, alarms, NVR
+- **Full RBAC hierarchy**: ADMIN (100), MANAGER (30), MEMBER (10)
+- Complete fulfillment pipeline (purchase orders, orders, deliveries)
+- RMA workflows in various states
+- **OAuth/SSO**: Google and Microsoft login (if credentials configured)
 
-Log in as `admin` / `admin123` or any demo user with password `demo123`:
+Log in with any demo account:
 
-| User | Role | Company |
-|------|------|---------|
-| `sarah.chen` | Admin | Meridian Security Solutions |
-| `james.wilson` | User | Meridian Security Solutions |
-| `lisa.patel` | User | Apex Manufacturing |
-| `mike.torres` | User | Apex Manufacturing |
-| `emma.jackson` | User | Coastal Networks |
+| Username | Password | Role | Company |
+|----------|----------|------|---------|
+| `admin` | `admin` | ADMIN | Platform |
+| `alice.admin` | `admin` | ADMIN | Platform |
+| `bob.manager` | `manager` | MANAGER | Acme Corporation |
+| `carol.member` | `member` | MEMBER | Acme Corporation |
+| `frank.manager` | `manager` | MANAGER | Globex Industries |
+| `henry.manager` | `manager` | MANAGER | Initech LLC |
+| `jack.manager` | `manager` | MANAGER | Wayne Enterprises |
+
+**See full demo details:** [`docs/DEMO_DATABASE.md`](docs/DEMO_DATABASE.md)
 
 To switch back to your real data:
 
