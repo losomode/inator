@@ -398,7 +398,7 @@ function App(): React.JSX.Element {
             <Route
               path="/fulfil/items"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute adminOnly>
                   <FulfilLayout>
                     <ItemList />
                   </FulfilLayout>
