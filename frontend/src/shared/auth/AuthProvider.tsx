@@ -35,7 +35,10 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     }
 
     try {
-      const response = await apiClient.get<User>('/auth/me/');
+      // Add cache-busting to ensure fresh data after login/user switch
+      const response = await apiClient.get<User>('/auth/me/', {
+        headers: { 'Cache-Control': 'no-cache' },
+      });
       const authUser = response.data;
 
       // Enrich with USERinator profile data (best-effort)
@@ -45,7 +48,9 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
           role_name?: string;
           display_name?: string;
           company?: { name: string };
-        }>('/users/me/');
+        }>('/users/me/', {
+          headers: { 'Cache-Control': 'no-cache' },
+        });
         authUser.role_level = profileResp.data.role_level;
         authUser.role_name = profileResp.data.role_name;
         authUser.display_name = profileResp.data.display_name;
@@ -70,9 +75,17 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         // Best-effort logout on server
       });
     }
+    
+    // Clear all tokens and storage
     clearToken();
-    localStorage.removeItem('refresh_token');
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Clear user state
     setUser(null);
+    
+    // Force reload to clear any in-memory caches
+    window.location.href = '/login';
   }, []);
 
   /**
