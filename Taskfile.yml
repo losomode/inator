@@ -397,38 +397,9 @@ tasks:
         echo ""
 
   # ─── Demo Database ───────────────────────────────────
-
-  demo:reset:
-    desc: Purge all databases and recreate fresh schemas
-    cmds:
-      - |
-        echo "⚠️  WARNING: This will DELETE ALL DATA in all databases!"
-        printf "Are you sure you want to continue? [y/N] "
-        read -r answer </dev/tty
-        case "$answer" in
-          [yY]*)
-            "{{.BASE_DIR}}/scripts/purge_databases.sh"
-            ;;
-          *)
-            echo "Cancelled."
-            exit 1
-            ;;
-        esac
-
-  demo:seed:
-    desc: Populate databases with comprehensive demo data
-    cmds:
-      - "{{.BASE_DIR}}/scripts/seed_demo.sh"
-
-  demo:full:
-    desc: Complete demo reset - purge databases and reseed with demo data
-    cmds:
-      - task: demo:reset
-      - task: demo:seed
-      - echo ""
-      - echo "🎉 Demo environment ready!"
-      - echo "   Restart services to use the new data:"
-      - echo "   task restart:all"
+  # Two approaches:
+  #   1. Non-destructive: setup:demodb → demodb:activate/deactivate (swap safely)
+  #   2. Destructive: demo:reset → demo:seed (fresh start, deletes current data)
 
   setup:demodb:
     desc: Build demo databases with sample data (does NOT touch active DBs)
@@ -452,24 +423,9 @@ tasks:
           echo "🔧 Migrating $inator_dir..."
           cd "{{.BASE_DIR}}/$inator_dir" && task backend:migrate 2>&1 | tail -1
 
-          # Create admin superuser (Authinator only)
-          if [ "$inator_dir" = "{{.AUTHINATOR_DIR}}" ]; then
-          echo "   Creating admin superuser..."
-            DJANGO_SUPERUSER_PASSWORD=admin123 \
-              "{{.BASE_DIR}}/{{.AUTHINATOR_DIR}}/.venv/bin/python" \
-              "{{.BASE_DIR}}/{{.AUTHINATOR_DIR}}/backend/manage.py" \
-              createsuperuser --noinput --username admin --email admin@example.com 2>/dev/null || true
-          fi
-
-          # USERinator uses setup_demo_data instead of seed_demo
-          if [ "$inator_dir" = "{{.USERINATOR_DIR}}" ]; then
-            echo "🌱 Seeding $inator_dir..."
-            cd "{{.BASE_DIR}}/$inator_dir" && task backend:manage -- create_default_roles 2>/dev/null || true
-            cd "{{.BASE_DIR}}/$inator_dir" && task backend:manage -- setup_demo_data
-          else
-            echo "🌱 Seeding $inator_dir..."
-            cd "{{.BASE_DIR}}/$inator_dir" && task backend:manage -- seed_demo
-          fi
+          # Seed using new comprehensive seed_demo commands
+          echo "🌱 Seeding $inator_dir..."
+          cd "{{.BASE_DIR}}/$inator_dir" && task backend:manage -- seed_demo 2>&1 | grep -E "✓|✅|⚠️|Creating" || true
 
           # Save as demo DB and restore active
           mv "$DB" "$DEMO"
@@ -484,6 +440,12 @@ tasks:
         echo "  RMAinator:    backend/db-demo.sqlite3"
         echo "  Fulfilinator: backend/db-demo.sqlite3"
         echo "  USERinator:   backend/db-demo.sqlite3"
+        echo ""
+        echo "📋 Demo includes:"
+        echo "   - 4 companies (Acme, Globex, Initech, Wayne)"
+        echo "   - 12 users (2 admins, 10 company users)"
+        echo "   - 6 catalog items"
+        echo "   - Full RBAC hierarchy (ADMIN/MANAGER/MEMBER)"
         echo ""
         echo "Run 'task demodb:activate' to switch to demo data."
         echo "Run 'task demodb:deactivate' to restore your real data."
@@ -514,10 +476,15 @@ tasks:
           echo "✓ $inator_dir: demo DB active"
         done
         echo ""
-        echo "Demo data is now active. Restart services to pick it up:"
-        echo "  task restart:all"
+        echo "✅ Demo data is now active. Restart services to pick it up:"
+        echo "   task restart:all"
         echo ""
-        echo "Login: admin / admin123 (or any demo user with demo123)"
+        echo "📋 Demo Accounts:"
+        echo "   Admins: admin/admin, alice.admin/admin"
+        echo "   Managers: bob.manager/manager, frank.manager/manager, etc."
+        echo "   Members: carol.member/member, grace.member/member, etc."
+        echo ""
+        echo "🔗 Access at: http://localhost:8080"
 
   demodb:deactivate:
     desc: Restore original databases (removes demo swap)
@@ -537,8 +504,45 @@ tasks:
           echo "✓ $inator_dir: original DB restored"
         done
         echo ""
-        echo "Original data restored. Restart services to pick it up:"
-        echo "  task restart:all"
+        echo "✅ Original data restored. Restart services to pick it up:"
+        echo "   task restart:all"
+
+  demo:reset:
+    desc: "[DESTRUCTIVE] Purge all databases and recreate fresh schemas"
+    cmds:
+      - |
+        echo ""
+        echo "⚠️  WARNING: This will DELETE ALL DATA in all databases!"
+        echo "   This is a destructive operation. Your current data will be lost."
+        echo ""
+        echo "   For non-destructive demo: use 'task setup:demodb' instead."
+        echo ""
+        printf "Are you sure you want to continue? [y/N] "
+        read -r answer </dev/tty
+        case "$answer" in
+          [yY]*)
+            "{{.BASE_DIR}}/scripts/purge_databases.sh"
+            ;;
+          *)
+            echo "Cancelled."
+            exit 1
+            ;;
+        esac
+
+  demo:seed:
+    desc: Populate databases with comprehensive demo data
+    cmds:
+      - "{{.BASE_DIR}}/scripts/seed_demo.sh"
+
+  demo:full:
+    desc: "[DESTRUCTIVE] Complete demo reset - purge databases and reseed"
+    cmds:
+      - task: demo:reset
+      - task: demo:seed
+      - echo ""
+      - echo "🎉 Demo environment ready!"
+      - echo "   Restart services to use the new data:"
+      - echo "   task restart:all"
 
   # ─── Logs ───────────────────────────────────────────
 
