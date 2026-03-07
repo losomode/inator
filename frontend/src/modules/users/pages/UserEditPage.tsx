@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { usersApi } from '../api';
-import type { UserProfile } from '../types';
+import { usersApi, companiesApi } from '../api';
+import type { UserProfile, Company } from '../types';
 
 /** Admin fields that go beyond self-edit. */
 interface AdminEditForm {
@@ -11,6 +11,7 @@ interface AdminEditForm {
   job_title: string;
   department: string;
   location: string;
+  company: number;
   role_name: string;
   role_level: number;
   is_active: boolean;
@@ -21,8 +22,13 @@ export function UserEditPage(): React.JSX.Element {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [form, setForm] = useState<AdminEditForm | null>(null);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    companiesApi.list().then(setCompanies).catch(() => {/* best-effort */});
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -30,6 +36,7 @@ export function UserEditPage(): React.JSX.Element {
       .get(Number(id))
       .then((p) => {
         setProfile(p);
+        const companyId = typeof p.company === 'object' ? p.company.id : p.company;
         setForm({
           display_name: p.display_name,
           phone: p.phone,
@@ -37,6 +44,7 @@ export function UserEditPage(): React.JSX.Element {
           job_title: p.job_title,
           department: p.department,
           location: p.location,
+          company: companyId,
           role_name: p.role_name,
           role_level: p.role_level,
           is_active: p.is_active,
@@ -103,6 +111,21 @@ export function UserEditPage(): React.JSX.Element {
 
         <hr className="my-2" />
         <h3 className="text-sm font-semibold text-gray-800">Admin Fields</h3>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Company</label>
+          <select
+            className="mt-1 w-full rounded border px-3 py-2 text-sm"
+            value={form.company}
+            onChange={(e) => setForm({ ...form, company: Number(e.target.value) })}
+          >
+            {companies.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700">Role Name</label>

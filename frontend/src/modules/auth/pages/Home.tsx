@@ -56,7 +56,7 @@ export function Home(): React.JSX.Element {
             <div className="flex items-center space-x-4">
               <div className="text-right">
                 <p className="text-sm font-medium text-gray-900">{user.username}</p>
-                <p className="text-xs text-gray-500">{user.customer?.name ?? user.role}</p>
+                <p className="text-xs text-gray-500">{user.email}</p>
               </div>
               <button
                 onClick={() => navigate('/security')}
