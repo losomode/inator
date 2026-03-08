@@ -504,6 +504,18 @@ tasks:
         echo "✅ Original data restored. Restart services to pick it up:"
         echo "   task restart:all"
 
+  setup:sso:
+    desc: Configure OAuth providers (Google, Microsoft) from .env credentials
+    cmds:
+      - |
+        echo "🔐 Configuring OAuth providers..."
+        cd "{{.BASE_DIR}}/{{.AUTHINATOR_DIR}}/backend"
+        ../.venv/bin/python manage.py setup_sso
+        echo ""
+        echo "✅ OAuth setup complete!"
+        echo "   Google and Microsoft login buttons will appear on login page."
+        echo "   Credentials loaded from Authinator/backend/.env"
+
   # ─── Logs ───────────────────────────────────────────
 
   logs:

@@ -14,8 +14,7 @@ task setup:demodb
 task demodb:activate
 
 # 3. Set up OAuth providers (if you have credentials in .env)
-cd Authinator/backend && ../../Authinator/.venv/bin/python manage.py setup_sso
-cd ../..
+task setup:sso
 
 # 4. Restart services to pick up demo data
 task restart:all
