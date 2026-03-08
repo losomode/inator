@@ -4,10 +4,12 @@ import { ordersApi, itemsApi } from '../../api';
 import { getFulfilErrorMessage } from '../../types';
 import type { Order, Item } from '../../types';
 import { AttachmentList } from '../../components/AttachmentList';
+import { useAuth } from '../../../../shared/auth/AuthProvider';
 
-/** Detail view for an Order with line items, fulfillment status, and attachments. */
+/** Detail view for an Order with serial numbers and attachments. */
 export function OrderDetail(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
+  const { isAdmin } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<Record<number, Item>>({});
   const [loading, setLoading] = useState(true);
@@ -93,7 +95,7 @@ export function OrderDetail(): React.JSX.Element {
             </span>
           </div>
           <div className="space-x-2">
-            {order.status === 'OPEN' && (
+            {isAdmin && order.status === 'OPEN' && (
               <button
                 type="button"
                 onClick={() => void handleClose()}
@@ -102,14 +104,16 @@ export function OrderDetail(): React.JSX.Element {
                 Close Order
               </button>
             )}
-            <Link to={`/fulfil/orders/${String(order.id)}/edit`}>
-              <button
-                type="button"
-                className="rounded bg-gray-200 px-4 py-2 font-medium text-gray-800 hover:bg-gray-300"
-              >
-                Edit
-              </button>
-            </Link>
+            {isAdmin && (
+              <Link to={`/fulfil/orders/${String(order.id)}/edit`}>
+                <button
+                  type="button"
+                  className="rounded bg-gray-200 px-4 py-2 font-medium text-gray-800 hover:bg-gray-300"
+                >
+                  Edit
+                </button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
