@@ -5,10 +5,12 @@ import { getFulfilErrorMessage } from '../../types';
 import { getAxiosErrorData } from '../../../../shared/types';
 import type { PurchaseOrder, Item } from '../../types';
 import { AttachmentList } from '../../components/AttachmentList';
+import { useAuth } from '../../../../shared/auth/AuthProvider';
 
 /** Detail view for a Purchase Order with fulfillment status and waive functionality. */
 export function PODetail(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
+  const { isAdmin } = useAuth();
   const [po, setPo] = useState<PurchaseOrder | null>(null);
   const [items, setItems] = useState<Record<number, Item>>({});
   const [loading, setLoading] = useState(true);
@@ -139,25 +141,27 @@ export function PODetail(): React.JSX.Element {
               {po.status}
             </span>
           </div>
-          <div className="space-x-2">
-            {po.status === 'OPEN' && (
-              <button
-                type="button"
-                onClick={() => void handleClose()}
-                className="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
-              >
-                Close PO
-              </button>
-            )}
-            <Link to={`/fulfil/pos/${String(po.id)}/edit`}>
-              <button
-                type="button"
-                className="rounded bg-gray-200 px-4 py-2 font-medium text-gray-800 hover:bg-gray-300"
-              >
-                Edit
-              </button>
-            </Link>
-          </div>
+          {isAdmin && (
+            <div className="space-x-2">
+              {po.status === 'OPEN' && (
+                <button
+                  type="button"
+                  onClick={() => void handleClose()}
+                  className="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+                >
+                  Close PO
+                </button>
+              )}
+              <Link to={`/fulfil/pos/${String(po.id)}/edit`}>
+                <button
+                  type="button"
+                  className="rounded bg-gray-200 px-4 py-2 font-medium text-gray-800 hover:bg-gray-300"
+                >
+                  Edit
+                </button>
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 
@@ -330,7 +334,7 @@ export function PODetail(): React.JSX.Element {
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
                     Status
                   </th>
-                  {po.status === 'OPEN' && (
+                  {isAdmin && po.status === 'OPEN' && (
                     <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
                       Actions
                     </th>
@@ -383,7 +387,7 @@ export function PODetail(): React.JSX.Element {
                           </span>
                         )}
                       </td>
-                      {po.status === 'OPEN' && (
+                      {isAdmin && po.status === 'OPEN' && (
                         <td className="px-4 py-3">
                           {fulfillment.remaining_quantity > 0 && (
                             <button
