@@ -140,6 +140,8 @@ The `setup` task automatically:
 
 The gateway routes all traffic through a single URL. Log in with the admin credentials. Other users can register through the UI and will need admin approval.
 
+**Deploying to a custom domain?** See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for configuring the platform for external URLs (e.g., `www.inatorapp.com`).
+
 ### Troubleshooting
 
 If services fail to start:

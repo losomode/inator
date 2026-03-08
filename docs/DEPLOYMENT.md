@@ -13,8 +13,8 @@ The platform is designed to work on `localhost` by default, but can be deployed 
 Add these variables to each backend's `.env` file:
 
 ```bash
-# All three backends (Authinator, RMAinator, Fulfilinator)
-DEPLOY_DOMAIN=www.yourdo main.com
+# All four backends (Authinator, USERinator, RMAinator, Fulfilinator)
+DEPLOY_DOMAIN=www.yourdomain.com
 DEPLOY_SCHEME=https
 ```
 
@@ -66,9 +66,6 @@ www.yourdomain.com {
     handle /api/auth/* {
         reverse_proxy localhost:8001
     }
-    handle /api/users/* {
-        reverse_proxy localhost:8001
-    }
     handle /api/services/* {
         reverse_proxy localhost:8001
     }
@@ -77,6 +74,20 @@ www.yourdomain.com {
     }
     handle /admin/* {
         reverse_proxy localhost:8001
+    }
+    
+    # USERinator backend
+    handle /api/users/* {
+        reverse_proxy localhost:8004
+    }
+    handle /api/companies/* {
+        reverse_proxy localhost:8004
+    }
+    handle /api/roles/* {
+        reverse_proxy localhost:8004
+    }
+    handle /api/invitations/* {
+        reverse_proxy localhost:8004
     }
     
     # RMAinator backend
