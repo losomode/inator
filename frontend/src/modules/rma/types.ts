@@ -38,6 +38,8 @@ export interface RMA {
   state: RMAState;
   priority: RMAPriority;
   group_id: number | null;
+  company_id: number | null;
+  company_name: string | null;
   fault_notes: string;
   first_ship_date: string | null;
   created_at: string;

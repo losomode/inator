@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { rmaApi } from '../api';
 import { STATE_COLORS } from '../types';
 import type { RMA } from '../types';
+import { useAuth } from '../../../shared/auth/AuthProvider';
 
 type ViewMode = 'all' | 'byGroup';
 
@@ -168,6 +169,7 @@ function RMAGrid({ rmas }: { rmas: RMA[] }): React.JSX.Element {
 
 function RMACard({ rma }: { rma: RMA }): React.JSX.Element {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
 
   return (
     <div
@@ -192,6 +194,11 @@ function RMACard({ rma }: { rma: RMA }): React.JSX.Element {
         {rma.group_id && (
           <span className="inline-block w-fit rounded bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
             📦 Group #{rma.group_id}
+          </span>
+        )}
+        {isAdmin && rma.company_name && (
+          <span className="inline-block w-fit rounded bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
+            🏢 {rma.company_name}
           </span>
         )}
         <div>

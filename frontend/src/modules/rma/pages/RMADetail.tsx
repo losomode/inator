@@ -232,6 +232,9 @@ export function RMADetail(): React.JSX.Element {
             Device Information
           </h2>
           <DetailRow label="Serial Number" value={rma.serial_number} />
+          {rma.company_name && (
+            <DetailRow label="Company" value={rma.company_name} />
+          )}
           <DetailRow
             label="Priority"
             value={
