@@ -55,8 +55,13 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         authUser.role_name = profileResp.data.role_name;
         authUser.display_name = profileResp.data.display_name;
         authUser.company_name = profileResp.data.company?.name;
-      } catch {
-        // USERinator profile not available — proceed with Authinator data only
+        console.log('[AuthProvider] Enriched user with USERinator data:', {
+          username: authUser.username,
+          role_level: authUser.role_level,
+          role_name: authUser.role_name,
+        });
+      } catch (err) {
+        console.warn('[AuthProvider] Failed to fetch USERinator profile, using Authinator data only:', err);
       }
 
       setUser(authUser);
@@ -119,6 +124,16 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
 
   const isAdmin = (user?.role_level != null && user.role_level >= 100) || user?.role === 'ADMIN';
   const isAuthenticated = user !== null;
+  
+  // Debug logging for permission checks
+  if (user && typeof window !== 'undefined') {
+    console.log('[AuthProvider] Permission check:', {
+      username: user.username,
+      role: user.role,
+      role_level: user.role_level,
+      isAdmin,
+    });
+  }
 
   const value: AuthContextValue = {
     user,
