@@ -62,6 +62,7 @@ export interface RMADevice {
 export interface RMAFilters {
   state: RMAState | '';
   priority: RMAPriority | '';
+  company: number | '';
 }
 
 /** Summary counters on the admin dashboard. */

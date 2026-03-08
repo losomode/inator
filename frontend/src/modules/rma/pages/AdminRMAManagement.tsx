@@ -4,6 +4,7 @@ import { rmaApi } from '../api';
 import { STATE_COLORS, PRIORITY_COLORS } from '../types';
 import type { RMA, RMAState, RMAPriority, RMAFilters } from '../types';
 import { AdminToolsNav } from '../components/AdminToolsNav';
+import { companiesApi, type Company } from '../../../shared/api/companies';
 
 const STATES: RMAState[] = [
   'SUBMITTED',
@@ -22,22 +23,35 @@ const PRIORITIES: RMAPriority[] = ['LOW', 'NORMAL', 'HIGH'];
 /** Admin page to search, filter, and manage all RMAs. */
 export function AdminRMAManagement(): React.JSX.Element {
   const [rmas, setRmas] = useState<RMA[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState<RMAFilters>({ state: '', priority: '' });
+  const [filters, setFilters] = useState<RMAFilters>({ state: '', priority: '', company: '' });
 
   const navigate = useNavigate();
 
   useEffect(() => {
     void loadRMAs();
+    void loadCompanies();
   }, []);
+
+  const loadCompanies = async (): Promise<void> => {
+    try {
+      const data = await companiesApi.list();
+      setCompanies(data);
+    } catch {
+      // Non-critical, just won't have company filter
+    }
+  };
 
   const loadRMAs = async (): Promise<void> => {
     try {
       setLoading(true);
       setError('');
-      const data = await rmaApi.list({ archived: false });
+      const params: Record<string, unknown> = { archived: false };
+      if (filters.company) params.company = filters.company;
+      const data = await rmaApi.list(params);
       setRmas(data);
     } catch {
       setError('Failed to load RMAs');
@@ -50,10 +64,11 @@ export function AdminRMAManagement(): React.JSX.Element {
     try {
       setLoading(true);
       setError('');
-      const params: Record<string, string> = {};
+      const params: Record<string, string | number> = {};
       if (searchQuery) params.q = searchQuery;
       if (filters.state) params.state = filters.state;
       if (filters.priority) params.priority = filters.priority;
+      if (filters.company) params.company = filters.company;
       const data = await rmaApi.search(params);
       setRmas(data);
     } catch {
@@ -65,7 +80,7 @@ export function AdminRMAManagement(): React.JSX.Element {
 
   const handleClearFilters = (): void => {
     setSearchQuery('');
-    setFilters({ state: '', priority: '' });
+    setFilters({ state: '', priority: '', company: '' });
     void loadRMAs();
   };
 
@@ -121,6 +136,21 @@ export function AdminRMAManagement(): React.JSX.Element {
             {PRIORITIES.map((priority) => (
               <option key={priority} value={priority}>
                 {priority}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={filters.company}
+            onChange={(e) =>
+              setFilters({ ...filters, company: e.target.value ? parseInt(e.target.value) : '' })
+            }
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+          >
+            <option value="">All Companies</option>
+            {companies.map((company) => (
+              <option key={company.id} value={company.id}>
+                {company.name}
               </option>
             ))}
           </select>

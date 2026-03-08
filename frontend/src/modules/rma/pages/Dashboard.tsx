@@ -4,28 +4,50 @@ import { rmaApi } from '../api';
 import { STATE_COLORS } from '../types';
 import type { RMA } from '../types';
 import { useAuth } from '../../../shared/auth/AuthProvider';
+import { companiesApi, type Company } from '../../../shared/api/companies';
 
 type ViewMode = 'all' | 'byGroup';
 
 /** User-facing RMA dashboard — shows all owned RMAs with optional group view. */
 export function Dashboard(): React.JSX.Element {
+  const { isAdmin } = useAuth();
   const [rmas, setRmas] = useState<RMA[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showArchived, setShowArchived] = useState(false);
+  const [companyFilter, setCompanyFilter] = useState<number | ''>('');
   const [viewMode, setViewMode] = useState<ViewMode>('all');
 
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (isAdmin) {
+      void loadCompanies();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     void loadRMAs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showArchived]);
+  }, [showArchived, companyFilter]);
+
+  const loadCompanies = async (): Promise<void> => {
+    try {
+      const data = await companiesApi.list();
+      setCompanies(data);
+    } catch {
+      // Non-critical, just won't have company filter
+    }
+  };
 
   const loadRMAs = async (): Promise<void> => {
     try {
       setLoading(true);
-      const data = await rmaApi.list({ archived: showArchived });
+      const params: Record<string, unknown> = { archived: showArchived };
+      if (companyFilter) params.company = companyFilter;
+      const data = await rmaApi.list(params);
       setRmas(data);
     } catch {
       setError('Failed to load RMAs');
@@ -40,6 +62,20 @@ export function Dashboard(): React.JSX.Element {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
         <h2 className="text-xl font-semibold text-gray-900">My RMAs</h2>
         <div className="flex flex-wrap gap-3">
+          {isAdmin && companies.length > 0 && (
+            <select
+              value={companyFilter}
+              onChange={(e) => setCompanyFilter(e.target.value ? parseInt(e.target.value) : '')}
+              className="rounded-md border border-gray-300 bg-white px-5 py-2 text-sm text-gray-700"
+            >
+              <option value="">All Companies</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          )}
           <button
             onClick={() => setShowArchived(!showArchived)}
             className="rounded-md border border-gray-300 bg-white px-5 py-2 text-sm text-gray-700 hover:bg-gray-50"
