@@ -7,6 +7,10 @@ vi.mock('../api', () => ({
   rmaApi: { list: vi.fn(), search: vi.fn() },
 }));
 
+vi.mock('../../../shared/api/companies', () => ({
+  companiesApi: { list: vi.fn() },
+}));
+
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -21,6 +25,8 @@ const mockRmas = [
     state: 'SUBMITTED' as const,
     priority: 'HIGH' as const,
     group_id: null,
+    company_id: 1,
+    company_name: 'Test Company',
     fault_notes: '',
     first_ship_date: null,
     created_at: '2024-01-01T00:00:00Z',

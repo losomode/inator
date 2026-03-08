@@ -10,6 +10,8 @@ const mockRma = {
   state: 'SUBMITTED' as const,
   priority: 'NORMAL' as const,
   group_id: null,
+  company_id: 1,
+  company_name: 'Test Company',
   fault_notes: 'Screen flickering',
   first_ship_date: '2024-01-15',
   created_at: '2024-01-01T10:00:00Z',

@@ -7,6 +7,15 @@ vi.mock('../api', () => ({
   rmaApi: { list: vi.fn() },
 }));
 
+vi.mock('../../../shared/api/companies', () => ({
+  companiesApi: { list: vi.fn() },
+}));
+
+let mockIsAdmin = false;
+vi.mock('../../../shared/auth/AuthProvider', () => ({
+  useAuth: () => ({ isAdmin: mockIsAdmin }),
+}));
+
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -22,7 +31,10 @@ function renderDashboard() {
 }
 
 describe('Dashboard', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockIsAdmin = false;
+  });
 
   it('shows loading state', async () => {
     const { rmaApi } = await import('../api');
@@ -41,6 +53,8 @@ describe('Dashboard', () => {
         state: 'SUBMITTED',
         priority: 'NORMAL',
         group_id: null,
+        company_id: 1,
+        company_name: 'Test Company',
         fault_notes: '',
         first_ship_date: null,
         created_at: '2024-01-01T00:00:00Z',
@@ -119,6 +133,8 @@ describe('Dashboard', () => {
         state: 'SUBMITTED',
         priority: 'NORMAL',
         group_id: 10,
+        company_id: 1,
+        company_name: 'Test Company',
         fault_notes: '',
         first_ship_date: null,
         created_at: '2024-01-01T00:00:00Z',
@@ -132,6 +148,8 @@ describe('Dashboard', () => {
         state: 'APPROVED',
         priority: 'HIGH',
         group_id: null,
+        company_id: 1,
+        company_name: 'Test Company',
         fault_notes: '',
         first_ship_date: null,
         created_at: '2024-01-01T00:00:00Z',
@@ -161,6 +179,8 @@ describe('Dashboard', () => {
         state: 'RECEIVED',
         priority: 'LOW',
         group_id: null,
+        company_id: 1,
+        company_name: 'Test Company',
         fault_notes: '',
         first_ship_date: null,
         created_at: '2024-01-01T00:00:00Z',
@@ -189,6 +209,8 @@ describe('Dashboard', () => {
         state: 'SUBMITTED',
         priority: 'NORMAL',
         group_id: 10,
+        company_id: 1,
+        company_name: 'Test Company',
         fault_notes: '',
         first_ship_date: null,
         created_at: '2024-01-01T00:00:00Z',
