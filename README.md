@@ -287,7 +287,7 @@ So you need a new -inator? Here's the recipe:
 6. **Add a `Taskfile.yml`** — copy from an existing inator, update the project name.
 7. **Init git**, create the GitHub repo, add to this README and `.gitignore`.
 
-See [INATOR.md](./INATOR.md) for the full standards and conventions.
+See [INATOR.md](docs/INATOR.md) for the full standards and conventions.
 
 ## Tech Stack
 
@@ -314,7 +314,7 @@ inator/                  ← You are here (platform repo)
 ├── shared/frontend/     ← Shared React library (Layout, AuthProvider, etc.)
 ├── Caddyfile.dev        ← Dev gateway config (routes :8080)
 ├── Taskfile.yml         ← Platform-level task runner
-├── INATOR.md            ← Standards & conventions
+├── docs/INATOR.md       ← Standards & conventions
 └── README.md            ← This file
 ```
 
