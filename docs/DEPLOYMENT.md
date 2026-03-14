@@ -23,9 +23,9 @@ For Authinator only (handles SSO redirects):
 FRONTEND_URL=https://www.yourdomain.com
 ```
 
-For the unified frontend:
+For each inator's frontend, set the deploy domain in its `.env`:
 ```bash
-# frontend/.env
+# <Inator>/frontend/.env
 VITE_DEPLOY_DOMAIN=www.yourdomain.com
 ```
 
@@ -100,15 +100,20 @@ www.yourdomain.com {
         reverse_proxy localhost:8003
     }
     
-    # Frontend (serve production build or proxy to Vite)
+    # Per-inator frontends
+    handle /rma/* {
+        reverse_proxy localhost:3002
+    }
+    handle /fulfil/* {
+        reverse_proxy localhost:3003
+    }
+    handle /users/* {
+        reverse_proxy localhost:3004
+    }
+    
+    # Authinator core frontend (catch-all)
     handle {
-        # Production: serve static files
-        root * /path/to/frontend/dist
-        try_files {path} /index.html
-        file_server
-        
-        # Or development: proxy to Vite
-        # reverse_proxy localhost:5173
+        reverse_proxy localhost:3001
     }
 }
 ```

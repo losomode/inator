@@ -21,6 +21,7 @@ logs/
 # Node / Frontend
 node_modules/
 coverage/
+.vite/
 
 # OS
 .DS_Store

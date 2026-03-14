@@ -14,12 +14,18 @@ graph TB
 
     subgraph "The Inator Platform"
         CADDY[🔀 Caddy Gateway<br/><i>:8080</i>]
-        FE[🖥 Unified Frontend<br/><i>Vite + React :5173</i>]
-        AUTH[🔐 Authinator<br/><i>Backend :8001</i>]
-        USER[👤 USERinator<br/><i>Backend :8004</i>]
+
+        subgraph "Core Services"
+            AUTH_FE[🖥 Authinator Frontend<br/><i>:3001 → /</i>]
+            AUTH[🔐 Authinator<br/><i>Backend :8001</i>]
+            USER_FE[🖥 USERinator Frontend<br/><i>:3004 → /users</i>]
+            USER[👤 USERinator<br/><i>Backend :8004</i>]
+        end
 
         subgraph "Business Services"
+            RMA_FE[🖥 RMAinator Frontend<br/><i>:3002 → /rma</i>]
             RMA[📦 RMAinator<br/><i>Backend :8002</i>]
+            FULFIL_FE[🖥 Fulfilinator Frontend<br/><i>:3003 → /fulfil</i>]
             FULFIL[🚚 Fulfilinator<br/><i>Backend :8003</i>]
             INV[📋 Inventoryinator<br/><i>Coming Soon</i>]
             NOTIF[🔔 Notificationinator<br/><i>Coming Soon</i>]
@@ -32,7 +38,10 @@ graph TB
     CADDY -->|/api/users, /api/companies, /api/roles, /api/invitations| USER
     CADDY -->|/api/rma| RMA
     CADDY -->|/api/fulfil| FULFIL
-    CADDY -->|everything else| FE
+    CADDY -->|/rma/*| RMA_FE
+    CADDY -->|/fulfil/*| FULFIL_FE
+    CADDY -->|/users/*| USER_FE
+    CADDY -->|catch-all| AUTH_FE
 
     AUTH -- JWT tokens --> RMA
     AUTH -- JWT tokens --> FULFIL
@@ -46,7 +55,10 @@ graph TB
     USER -- role_level in JWT --> FULFIL
 
     style CADDY fill:#e74c3c,color:#fff
-    style FE fill:#3498db,color:#fff
+    style AUTH_FE fill:#3498db,color:#fff
+    style USER_FE fill:#3498db,color:#fff
+    style RMA_FE fill:#3498db,color:#fff
+    style FULFIL_FE fill:#3498db,color:#fff
     style AUTH fill:#4a90d9,color:#fff
     style USER fill:#9b59b6,color:#fff
     style RMA fill:#27ae60,color:#fff
@@ -57,13 +69,13 @@ graph TB
     style LIC fill:#95a5a6,color:#fff,stroke-dasharray: 5 5
 ```
 
-All traffic flows through a **Caddy reverse proxy** on port 8080. API requests are routed to the appropriate backend by path prefix; everything else is served by the **unified frontend** — a single React SPA that consolidates all inator UIs.
+All traffic flows through a **Caddy reverse proxy** on port 8080. API requests route to backends by path prefix. Each inator serves its own frontend — Caddy routes `/rma/*`, `/fulfil/*`, `/users/*` to their respective dev servers, with Authinator as the catch-all serving the core UI (login, service directory).
 
 **Authinator** is the foundation — every other inator delegates authentication to it via JWT. **USERinator** is the authoritative source for user profiles, companies, and roles — Authinator enriches JWT tokens with `role_level` and `role_name` claims fetched from USERinator at login.
 
 ## Anatomy of an Inator
 
-Each inator's **backend** is self-contained and independently deployable. The frontend is consolidated into a single unified SPA under `frontend/` at the platform root.
+Each inator is **fully self-contained** — both backend and frontend live within the inator's own directory. Shared frontend code (Layout, AuthProvider, etc.) is provided by a shared library at `shared/frontend/`.
 
 ```
 <Name>inator/
@@ -71,6 +83,10 @@ Each inator's **backend** is self-contained and independently deployable. The fr
 │   ├── config/       # Settings, URLs, WSGI
 │   ├── core/         # Auth integration, permissions, shared models
 │   └── <app>/        # Domain-specific apps
+├── frontend/         # Vite + React + Tailwind (per-inator UI)
+│   ├── src/
+│   ├── vite.config.ts
+│   └── package.json
 ├── docs/             # External-facing documentation
 ├── Reference/        # Internal dev materials (gitignored)
 ├── deft/             # AI agent framework (gitignored)
@@ -81,12 +97,12 @@ Each inator's **backend** is self-contained and independently deployable. The fr
 
 ## Current Inators
 
-| Service | Purpose | Backend Port | API Prefix | Repo |
-|---------|---------|-------------|------------|------|
-| **Authinator** | Authentication, SSO, MFA, JWT tokens | 8001 | `/api/auth` | [losomode/AUTHinator](https://github.com/losomode/AUTHinator) |
-| **USERinator** | User profiles, companies, roles, invitations | 8004 | `/api/users`, `/api/companies`, `/api/roles`, `/api/invitations` | [losomode/USERinator](https://github.com/losomode/USERinator) |
-| **RMAinator** | Return merchandise authorization tracking | 8002 | `/api/rma` | [losomode/RMAinator](https://github.com/losomode/RMAinator) |
-| **Fulfilinator** | Purchase orders, orders, deliveries | 8003 | `/api/fulfil` | [losomode/FULFILinator](https://github.com/losomode/FULFILinator) |
+| Service | Purpose | Backend | Frontend | API Prefix |
+|---------|---------|---------|----------|------------|
+| **Authinator** | Auth, SSO, MFA, service directory | :8001 | :3001 → `/` | `/api/auth` |
+| **USERinator** | User profiles, companies, roles | :8004 | :3004 → `/users` | `/api/users`, `/api/companies`, `/api/roles`, `/api/invitations` |
+| **RMAinator** | Return merchandise authorization | :8002 | :3002 → `/rma` | `/api/rma` |
+| **Fulfilinator** | Purchase orders, orders, deliveries | :8003 | :3003 → `/fulfil` | `/api/fulfil` |
 
 ## Roles
 
@@ -123,7 +139,7 @@ git clone git@github.com:losomode/USERinator.git Userinator
 # 2. Run first-time setup (installs deps, creates .env, migrates, creates admin)
 task setup
 
-# 3. Start everything (backends + unified frontend + gateway)
+# 3. Start everything (backends + frontends + gateway)
 task start:all
 ```
 
@@ -155,7 +171,10 @@ tail -50 logs/Authinator-backend.log
 tail -50 logs/RMAinator-backend.log
 tail -50 logs/Fulfilinator-backend.log
 tail -50 logs/USERinator-backend.log
-tail -50 logs/frontend.log
+tail -50 logs/Authinator-frontend.log
+tail -50 logs/RMAinator-frontend.log
+tail -50 logs/Fulfilinator-frontend.log
+tail -50 logs/USERinator-frontend.log
 tail -50 logs/gateway.log
 
 # Common fixes
@@ -226,20 +245,20 @@ task demodb:activate      # Swap to demo data (backs up active DBs)
 task demodb:deactivate    # Restore original databases
 
 # Start/Stop/Restart
-task start:all            # Start all backends + unified frontend + Caddy gateway
+task start:all            # Start all backends + frontends + Caddy gateway
 task stop:all             # Stop all services
 task restart:all          # Restart all services
 task status               # Check which ports are listening
 task logs                 # Tail all logs
 
-# Gateway + Frontend
+# Gateway + Frontends
 task gateway:start        # Start Caddy reverse proxy (:8080)
 task gateway:stop         # Stop Caddy
-task frontend:start       # Start unified frontend dev server (:5173)
-task frontend:stop        # Stop unified frontend
+task frontends:start      # Start all per-inator frontend dev servers
+task frontends:stop       # Stop all frontends
 
 # Individual inator control
-task start:rmainator      # Start just RMAinator (backend only)
+task start:rmainator      # Start just RMAinator (backend + frontend)
 task stop:fulfilinator    # Stop just Fulfilinator
 task restart:authinator   # Restart just Authinator
 ```
@@ -263,8 +282,8 @@ So you need a new -inator? Here's the recipe:
 1. **Name it** — `<Domain>inator`. Acronyms stay caps (`RMAinator`), words get title case (`Fulfilinator`).
 2. **Create the directory** under this root.
 3. **Scaffold** — `backend/` with Django + DRF, `frontend/` with Vite + React + Tailwind.
-4. **Assign ports** — next available backend port (800X). The frontend module goes in the unified SPA.
-5. **Integrate auth** — point at Authinator for JWT validation. Copy `core/authentication.py` from an existing inator.
+4. **Assign ports** — next backend port (800X) and frontend port (300X). Register the frontend path in `Caddyfile.dev`.
+5. **Integrate auth** — point at Authinator for JWT validation. Use `@inator/shared` for AuthProvider, Layout, etc.
 6. **Add a `Taskfile.yml`** — copy from an existing inator, update the project name.
 7. **Init git**, create the GitHub repo, add to this README and `.gitignore`.
 
@@ -284,15 +303,15 @@ See [INATOR.md](./INATOR.md) for the full standards and conventions.
 
 ## Project Layout
 
-This repo (`inator`) is the **platform hub** — it contains the unified frontend, gateway config, and orchestration. Each inator backend lives in its own repository and is cloned into this workspace.
+This repo (`inator`) is the **platform hub** — it contains shared frontend code, gateway config, and orchestration. Each inator (backend + frontend) lives in its own repository and is cloned into this workspace.
 
 ```
 inator/                  ← You are here (platform repo)
-├── Authinator/          ← git@github.com:losomode/AUTHinator.git
+├── Authinator/          ← git@github.com:losomode/AUTHinator.git (core: auth + service directory)
 ├── RMAinator/           ← git@github.com:losomode/RMAinator.git
 ├── Fulfilinator/        ← git@github.com:losomode/FULFILinator.git
 ├── Userinator/          ← git@github.com:losomode/USERinator.git
-├── frontend/            ← Unified React SPA (all inator UIs)
+├── shared/frontend/     ← Shared React library (Layout, AuthProvider, etc.)
 ├── Caddyfile.dev        ← Dev gateway config (routes :8080)
 ├── Taskfile.yml         ← Platform-level task runner
 ├── INATOR.md            ← Standards & conventions

@@ -36,7 +36,7 @@ tasks:
       - task: setup:rmainator
       - task: setup:fulfilinator
       - task: setup:userinator
-      - task: frontend:install
+      - task: frontends:install
       - task: setup:admin
       - echo ""
       - echo "✅ Setup complete! All inators are ready."
@@ -45,7 +45,7 @@ tasks:
       - echo "  1. Start all services:"
       - echo "     task start:all"
       - echo "  2. Access the platform"
-      - echo "     Gateway (unified) - http://localhost:8080"
+      - echo "     Gateway - http://localhost:8080"
       - echo ""
 
   setup:authinator:
@@ -118,46 +118,66 @@ tasks:
             ;;
         esac
 
-  # ─── Unified Frontend ───────────────────────────────────
+  # ─── Per-inator Frontends ─────────────────────────────────
 
-  frontend:install:
-    desc: Install unified frontend dependencies
+  frontends:install:
+    desc: Install frontend dependencies for all inators
     cmds:
-      - cd "{{.BASE_DIR}}/frontend" && task install
+      - |
+        echo "📦 Installing frontend dependencies..."
+        for dir in "{{.AUTHINATOR_DIR}}" "{{.RMAINATOR_DIR}}" "{{.FULFILINATOR_DIR}}" "{{.USERINATOR_DIR}}"; do
+          echo "   $dir/frontend"
+          cd "{{.BASE_DIR}}/$dir/frontend" && npm install --silent
+        done
+        echo "   shared/frontend"
+        cd "{{.BASE_DIR}}/shared/frontend" && npm install --silent
+        echo "✓ All frontend dependencies installed"
 
-  frontend:dev:
-    desc: Start unified frontend dev server (:5173)
+  frontends:build:
+    desc: Build all per-inator frontends for production
     cmds:
-      - cd "{{.BASE_DIR}}/frontend" && task dev
+      - |
+        echo "🔨 Building all frontends..."
+        for dir in "{{.AUTHINATOR_DIR}}" "{{.RMAINATOR_DIR}}" "{{.FULFILINATOR_DIR}}" "{{.USERINATOR_DIR}}"; do
+          echo "   Building $dir/frontend..."
+          cd "{{.BASE_DIR}}/$dir/frontend" && npm run build
+        done
+        echo "✓ All frontends built"
 
-  frontend:build:
-    desc: Build unified frontend for production
+  frontends:start:
+    desc: Start all per-inator frontend dev servers (background)
     cmds:
-      - cd "{{.BASE_DIR}}/frontend" && task build
+      - task: _start_frontend
+        vars: { NAME: Authinator, DIR: "{{.AUTHINATOR_DIR}}", FRONTEND_PORT: "3001" }
+      - task: _start_frontend
+        vars: { NAME: RMAinator, DIR: "{{.RMAINATOR_DIR}}", FRONTEND_PORT: "3002" }
+      - task: _start_frontend
+        vars: { NAME: Fulfilinator, DIR: "{{.FULFILINATOR_DIR}}", FRONTEND_PORT: "3003" }
+      - task: _start_frontend
+        vars: { NAME: USERinator, DIR: "{{.USERINATOR_DIR}}", FRONTEND_PORT: "3004" }
 
-  frontend:check:
-    desc: Run pre-commit checks on unified frontend
+  frontends:stop:
+    desc: Stop all per-inator frontend dev servers
     cmds:
-      - cd "{{.BASE_DIR}}/frontend" && task check
+      - |
+        echo "⏹  Stopping all frontends..."
+        for port in 3001 3002 3003 3004; do
+          pkill -f "vite.*$port" 2>/dev/null || true
+        done
 
-  frontend:start:
-    desc: Start unified frontend dev server (background, :5173)
+  _start_frontend:
+    internal: true
+    requires:
+      vars: [NAME, DIR, FRONTEND_PORT]
     cmds:
       - mkdir -p "{{.LOG_DIR}}"
       - |
-        echo "▶️  Starting unified frontend (:5173)..."
-        cd "{{.BASE_DIR}}/frontend"
-        nohup npx vite --port 5173 --strictPort \
-          < /dev/null > "{{.LOG_DIR}}/frontend.log" 2>&1 &
+        echo "▶️  Starting {{.NAME}} frontend (:{{.FRONTEND_PORT}})..."
+        cd "{{.BASE_DIR}}/{{.DIR}}/frontend"
+        nohup npx vite --port {{.FRONTEND_PORT}} --strictPort \
+          < /dev/null > "{{.LOG_DIR}}/{{.NAME}}-frontend.log" 2>&1 &
         echo "   PID: $!"
       - sleep 2
-
-  frontend:stop:
-    desc: Stop unified frontend dev server
-    cmds:
-      - |
-        echo "⏹  Stopping unified frontend..."
-        pkill -f "vite.*5173" 2>/dev/null || true
 
   # ─── Gateway ─────────────────────────────────────────
 
@@ -166,6 +186,13 @@ tasks:
     cmds:
       - mkdir -p "{{.LOG_DIR}}"
       - |
+        # Kill any stale Caddy processes before starting
+        STALE_PIDS=$(lsof -iTCP:8080 -sTCP:LISTEN -P -t 2>/dev/null || true)
+        if [ -n "$STALE_PIDS" ]; then
+          echo "   Cleaning up stale processes on :8080..."
+          echo "$STALE_PIDS" | xargs kill -9 2>/dev/null || true
+          sleep 1
+        fi
         echo "▶️  Starting Caddy gateway (:8080)..."
         nohup caddy run --config "{{.BASE_DIR}}/Caddyfile.dev" \
           > "{{.LOG_DIR}}/gateway.log" 2>&1 &
@@ -177,12 +204,16 @@ tasks:
     cmds:
       - |
         echo "⏹  Stopping Caddy gateway..."
-        pkill -f "caddy run.*Caddyfile.dev" 2>/dev/null || true
+        PIDS=$(lsof -iTCP:8080 -sTCP:LISTEN -P -t 2>/dev/null || true)
+        if [ -n "$PIDS" ]; then
+          echo "$PIDS" | xargs kill -9 2>/dev/null || true
+        fi
+        pkill -f "caddy" 2>/dev/null || true
 
   # ─── Start ──────────────────────────────────────────
 
   start:all:
-    desc: Start all backends, unified frontend, gateway, and register services
+    desc: Start all backends, per-inator frontends, gateway, and register services
     cmds:
       - task: _start_backend
         vars: { NAME: Authinator, DIR: "{{.AUTHINATOR_DIR}}", BACKEND_PORT: "8001" }
@@ -192,7 +223,7 @@ tasks:
         vars: { NAME: Fulfilinator, DIR: "{{.FULFILINATOR_DIR}}", BACKEND_PORT: "8003" }
       - task: _start_backend
         vars: { NAME: USERinator, DIR: "{{.USERINATOR_DIR}}", BACKEND_PORT: "8004" }
-      - task: frontend:start
+      - task: frontends:start
       - task: gateway:start
       - task: register
       - task: status
@@ -237,13 +268,14 @@ tasks:
           FRONTEND_PORT: "3003"
 
   start:userinator:
-    desc: "(standalone) Start USERinator backend (:8004)"
+    desc: "(standalone) Start USERinator backend + frontend (:8004, :3004)"
     cmds:
-      - task: _start_backend
+      - task: _start
         vars:
           NAME: USERinator
           DIR: "{{.USERINATOR_DIR}}"
           BACKEND_PORT: "8004"
+          FRONTEND_PORT: "3004"
 
   _start_backend:
     internal: true
@@ -278,10 +310,10 @@ tasks:
   # ─── Stop ───────────────────────────────────────────
 
   stop:all:
-    desc: Stop all services, unified frontend, and gateway
+    desc: Stop all services, frontends, and gateway
     cmds:
       - task: gateway:stop
-      - task: frontend:stop
+      - task: frontends:stop
       - task: stop:authinator
       - task: stop:rmainator
       - task: stop:fulfilinator
@@ -377,9 +409,17 @@ tasks:
     cmds:
       - |
         echo ""
-        echo "Port status (unified gateway mode):"
-        echo "  Gateway & Frontend:"
-        for port in 8080 5173; do
+        echo "Port status:"
+        echo "  Gateway:"
+        for port in 8080; do
+          if lsof -iTCP:$port -sTCP:LISTEN -P >/dev/null 2>&1; then
+            printf "    :%-5s ✓\n" $port
+          else
+            printf "    :%-5s ✗\n" $port
+          fi
+        done
+        echo "  Frontends:"
+        for port in 3001 3002 3003 3004; do
           if lsof -iTCP:$port -sTCP:LISTEN -P >/dev/null 2>&1; then
             printf "    :%-5s ✓\n" $port
           else

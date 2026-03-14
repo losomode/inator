@@ -1,0 +1,26 @@
+{
+  "name": "@inator/shared",
+  "private": true,
+  "version": "2.0.0",
+  "description": "Shared frontend library for all inator microservice frontends",
+  "dependencies": {
+    "axios": "^1.13.6"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.13.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}
