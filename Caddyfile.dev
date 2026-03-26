@@ -54,6 +54,11 @@
 		reverse_proxy localhost:8002
 	}
 
+	# RMAinator media files (uploads) — must be before the /rma/* frontend route
+	handle /media/* {
+		reverse_proxy localhost:8002
+	}
+
 	# Fulfilinator backend
 	handle /api/fulfil/* {
 		reverse_proxy localhost:8003
