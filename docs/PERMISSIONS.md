@@ -13,8 +13,7 @@ Roles are divided into two tiers: **Platform roles** (no company affiliation, cr
 | Role | Level | Technical Name | Description |
 |------|-------|----------------|-------------|
 | **Platform Admin** | 100 | `PLATFORM_ADMIN` | Full read/write access across all companies. Can create companies, manage all users, delete records. |
-| **Platform Manager** | 75 | `PLATFORM_MANAGER` | Cross-company read access. Can view all data but limited write permissions (scoped by lack of company). |
-| **Platform Member** | 60 | `PLATFORM_MEMBER` | Cross-company read-only access. Observer role with no write capabilities. |
+| **Platform Manager** | 75 | `PLATFORM_MANAGER` | Cross-company read access. Can view all data; write access is effectively blocked by having no company affiliation. |
 
 ### Company Roles — scoped to a single company
 
@@ -30,78 +29,78 @@ Roles are divided into two tiers: **Platform roles** (no company affiliation, cr
 - **Company roles** are assigned to customer-facing users. They can only see and act within their own company.
 - **Company Admin** has the same privileges as Company Manager in all services *except* USERinator, where it can additionally manage manager-level users and set credentials for them.
 - A user cannot be assigned a role higher than the assigning user's own role level.
-- `create_default_roles` seeds all six system roles. Custom roles may be added at any level 1–100 by Platform Admin.
+- `create_default_roles` seeds all five system roles. Custom roles may be added at any level 1-100 by Platform Admin.
+- The platform role threshold is **75** (PLATFORM_MANAGER). Any role >= 75 with no company association is treated as a platform user.
 
 ## Permission Matrix
 
-> **Column abbreviations used in tables below:**
-> P.Admin = Platform Admin (100) • P.Manager = Platform Manager (75) • P.Member = Platform Member (60)
-> C.Admin = Company Admin (50) • C.Manager = Company Manager (30) • C.Member = Company Member (10)
+> **Column abbreviations:** P.Admin = Platform Admin (100) · P.Manager = Platform Manager (75)
+> C.Admin = Company Admin (50) · C.Manager = Company Manager (30) · C.Member = Company Member (10)
 >
-> “All” = all companies • “Own” = own company only • ❌ = not permitted
+> "All" = all companies · "Own" = own company only · X = not permitted
 
 ---
 
 ### USERinator — Company Management
 
-| Action | P.Admin | P.Manager | P.Member | C.Admin | C.Manager | C.Member |
-|--------|---------|-----------|----------|---------|-----------|----------|
-| View company info | All | All (read) | All (read) | Own | Own | Own |
-| Edit company info | All | ❌ | ❌ | Own | Own | ❌ |
-| Create company | ✓ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Delete/archive company | ✓ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Action | P.Admin | P.Manager | C.Admin | C.Manager | C.Member |
+|--------|---------|-----------|---------|-----------|----------|
+| View company info | All | All (read) | Own | Own | Own |
+| Edit company info | All | X | Own | Own | X |
+| Create company | Yes | X | X | X | X |
+| Delete/archive company | Yes | X | X | X | X |
 
 **Rules:**
 - Only Platform Admin can create companies.
-- Platform roles see all companies (read-only for P.Manager and P.Member).
-- Company-scoped roles (C.Admin, C.Manager) can edit their own company’s info.
+- Platform Manager can view all companies but cannot edit any (no company affiliation).
+- Company-scoped roles (C.Admin, C.Manager) can edit their own company's info.
 - C.Member has read-only access to their own company.
 
 ---
 
 ### USERinator — User Management
 
-| Action | P.Admin | P.Manager | P.Member | C.Admin | C.Manager | C.Member |
-|--------|---------|-----------|----------|---------|-----------|----------|
-| View user profiles | All | All (read) | All (read) | Own | Own | Own |
-| Edit user profiles | All | ❌\u00b9 | ❌ | Own (< 50) | Own (< 30) | ❌ |
-| Create users (C.Member) | ✓ | ❌ | ❌ | ✓ | ✓ | ❌ |
-| Create users (C.Manager) | ✓ | ❌ | ❌ | ✓ | ❌ | ❌ |
-| Create users (C.Admin) | ✓ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Create platform users | ✓ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Change user role | ✓ | ❌ | ❌ | Own (< 50) | Own (< 30) | ❌ |
-| Deactivate user | ✓ | ❌ | ❌ | Own (< 50) | Own (< 30) | ❌ |
-| Mark for deletion | ✓ | ❌ | ❌ | Own (< 50) | Own (< 30) | ❌ |
-| Permanently delete user | ✓ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Change user credentials | ✓ | ❌ | ❌ | Own (< 50) | Own (< 30) | ❌ |
-| Approve/reject invitations | All | ❌ | ❌ | Own | Own | ❌ |
+| Action | P.Admin | P.Manager | C.Admin | C.Manager | C.Member |
+|--------|---------|-----------|---------|-----------|----------|
+| View user profiles | All | All (read) | Own | Own | Own |
+| Edit user profiles | All | Own only (1) | Own (< 50) | Own (< 30) | X |
+| Create users (C.Member) | Yes | X | Yes | Yes | X |
+| Create users (C.Manager) | Yes | X | Yes | X | X |
+| Create users (C.Admin) | Yes | X | X | X | X |
+| Create platform users | Yes | X | X | X | X |
+| Change user role | Yes | X | Own (< 50) | Own (< 30) | X |
+| Deactivate user | Yes | X | Own (< 50) | Own (< 30) | X |
+| Mark for deletion | Yes | X | Own (< 50) | Own (< 30) | X |
+| Permanently delete user | Yes | X | X | X | X |
+| Change user credentials | Yes | X | Own (< 50) | Own (< 30) | X |
+| Approve/reject invitations | All | X | Own | Own | X |
 
-¹ P.Manager can edit only their own profile, not others’.
+(1) P.Manager can only edit their own profile, not other users'.
 
 **Rules:**
-- Users can only be assigned roles up to (and not exceeding) the acting user’s own level.
-- Platform Admin is the only role that can create other Platform Admin accounts.
+- Users can only be assigned roles up to (and not exceeding) the acting user's own level.
+- Platform Admin is the only role that can create other Platform Admin or Platform Manager accounts.
 - Company Admin and Company Manager can only edit, deactivate, or change credentials for users with a *lower* role level than their own within the same company.
 - Deactivation revokes AUTHinator login immediately and soft-deletes the USERinator profile.
-- “Mark for deletion” flags a deactivated user for Platform Admin review. Permanent deletion removes all records.
-- Invitation approval (review queue) is scoped to the approver’s company for C.Admin/C.Manager.
+- "Mark for deletion" flags a deactivated user for Platform Admin review. Permanent deletion removes all records.
+- Invitation approval (review queue) is scoped to the approver's company for C.Admin/C.Manager.
 
 ---
 
-### USERinator — Own Profile & Preferences
+### USERinator — Own Profile and Preferences
 
-| Action | P.Admin | P.Manager | P.Member | C.Admin | C.Manager | C.Member |
-|--------|---------|-----------|----------|---------|-----------|----------|
-| View own profile | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Edit own profile | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Change own password | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Change own username | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| View/edit preferences | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Action | P.Admin | P.Manager | C.Admin | C.Manager | C.Member |
+|--------|---------|-----------|---------|-----------|----------|
+| View own profile | Yes | Yes | Yes | Yes | Yes |
+| Edit own profile | Yes | Yes | Yes | Yes | Yes |
+| Change own password | Yes | Yes | Yes | Yes | Yes |
+| Change own username | Yes | Yes | Yes | Yes | Yes |
+| View/edit preferences | Yes | Yes | Yes | Yes | Yes |
 
 **Rules:**
 - All roles can manage their own profile and preferences.
-- Safe fields only for self-edit: display\_name, avatar, phone, bio, job\_title, department, location.
-- Password/username self-changes require the user’s current password for verification.
+- Safe fields only for self-edit: display_name, avatar, phone, bio, job_title, department, location.
+- Password/username self-changes require the user's current password for verification.
 
 ---
 
@@ -109,28 +108,28 @@ Roles are divided into two tiers: **Platform roles** (no company affiliation, cr
 
 > Company Admin behaves identically to Company Manager in RMAinator.
 
-| Action | P.Admin | P.Manager | P.Member | C.Admin | C.Manager | C.Member |
-|--------|---------|-----------|----------|---------|-----------|----------|
-| View RMAs | All | All (read) | All (read) | Own | Own | Own |
-| Create RMAs | ✓ | ❌ | ❌ | ✓ | ✓ | ✓ |
-| Edit RMAs | All | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Delete RMAs | All | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Approve/reject RMAs | All | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Create RMA Groups | ✓ | ❌ | ❌ | ✓ | ✓ | ✓ |
+| Action | P.Admin | P.Manager | C.Admin | C.Manager | C.Member |
+|--------|---------|-----------|---------|-----------|----------|
+| View RMAs | All | All (read) | Own | Own | Own |
+| Create RMAs | Yes | X | Yes | Yes | Yes |
+| Edit RMAs | All | X | X | X | X |
+| Delete RMAs | All | X | X | X | X |
+| Approve/reject RMAs | All | X | X | X | X |
+| Create RMA Groups | Yes | X | Yes | Yes | Yes |
 
 **Rules:**
 - All company-scoped roles can create RMAs for their company.
 - RMA approval/edit/delete is Platform Admin only.
-- Platform Manager/Member have read-only visibility across all companies.
+- Platform Manager has read-only visibility across all companies.
 
 ---
 
 ### RMAinator — Item Management
 
-| Action | P.Admin | P.Manager | P.Member | C.Admin | C.Manager | C.Member |
-|--------|---------|-----------|----------|---------|-----------|----------|
-| View Items | ✓ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Create/Edit/Delete Items | ✓ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Action | P.Admin | P.Manager | C.Admin | C.Manager | C.Member |
+|--------|---------|-----------|---------|-----------|----------|
+| View Items | Yes | X | X | X | X |
+| Create/Edit/Delete Items | Yes | X | X | X | X |
 
 **Rules:**
 - Items (catalog/SKU management) are Platform Admin only.
@@ -142,12 +141,12 @@ Roles are divided into two tiers: **Platform roles** (no company affiliation, cr
 
 > Company Admin behaves identically to Company Manager in FULFILinator.
 
-| Action | P.Admin | P.Manager | P.Member | C.Admin | C.Manager | C.Member |
-|--------|---------|-----------|----------|---------|-----------|----------|
-| View POs | All | All (read) | All (read) | Own | Own | Own |
-| Create POs | ✓ | ❌ | ❌ | Own | Own | Own |
-| Edit POs | All | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Delete POs | All | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Action | P.Admin | P.Manager | C.Admin | C.Manager | C.Member |
+|--------|---------|-----------|---------|-----------|----------|
+| View POs | All | All (read) | Own | Own | Own |
+| Create POs | Yes | X | Own | Own | Own |
+| Edit POs | All | X | X | X | X |
+| Delete POs | All | X | X | X | X |
 
 **Rules:**
 - All company-scoped roles can create POs for their company.
@@ -157,12 +156,12 @@ Roles are divided into two tiers: **Platform roles** (no company affiliation, cr
 
 ### FULFILinator — Orders
 
-| Action | P.Admin | P.Manager | P.Member | C.Admin | C.Manager | C.Member |
-|--------|---------|-----------|----------|---------|-----------|----------|
-| View Orders | All | All (read) | All (read) | Own | Own | Own |
-| Create Orders | ✓ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Edit Orders | All | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Delete Orders | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Action | P.Admin | P.Manager | C.Admin | C.Manager | C.Member |
+|--------|---------|-----------|---------|-----------|----------|
+| View Orders | All | All (read) | Own | Own | Own |
+| Create Orders | Yes | X | X | X | X |
+| Edit Orders | All | X | X | X | X |
+| Delete Orders | X | X | X | X | X |
 
 **Rules:**
 - Order creation is fulfillment workflow (Platform Admin only).
@@ -172,12 +171,12 @@ Roles are divided into two tiers: **Platform roles** (no company affiliation, cr
 
 ### FULFILinator — Deliveries
 
-| Action | P.Admin | P.Manager | P.Member | C.Admin | C.Manager | C.Member |
-|--------|---------|-----------|----------|---------|-----------|----------|
-| View Deliveries | All | All (read) | All (read) | Own | Own | Own |
-| Create Deliveries | ✓ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Edit Deliveries | All | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Delete Deliveries | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Action | P.Admin | P.Manager | C.Admin | C.Manager | C.Member |
+|--------|---------|-----------|---------|-----------|----------|
+| View Deliveries | All | All (read) | Own | Own | Own |
+| Create Deliveries | Yes | X | X | X | X |
+| Edit Deliveries | All | X | X | X | X |
+| Delete Deliveries | X | X | X | X | X |
 
 **Rules:**
 - Delivery creation is fulfillment workflow (Platform Admin only).
@@ -187,11 +186,11 @@ Roles are divided into two tiers: **Platform roles** (no company affiliation, cr
 
 ### AUTHinator — Service Registry
 
-| Action | P.Admin | P.Manager | P.Member | C.Admin | C.Manager | C.Member |
-|--------|---------|-----------|----------|---------|-----------|----------|
-| View services | ✓ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Register service | ✓ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Unregister service | ✓ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Action | P.Admin | P.Manager | C.Admin | C.Manager | C.Member |
+|--------|---------|-----------|---------|-----------|----------|
+| View services | Yes | X | X | X | X |
+| Register service | Yes | X | X | X | X |
+| Unregister service | Yes | X | X | X | X |
 
 **Rules:**
 - Service registry is Platform Admin only.
@@ -201,9 +200,9 @@ Roles are divided into two tiers: **Platform roles** (no company affiliation, cr
 
 ### System — Audit Logs (if implemented)
 
-| Action | P.Admin | P.Manager | P.Member | C.Admin | C.Manager | C.Member |
-|--------|---------|-----------|----------|---------|-----------|----------|
-| View audit logs | All | All (read) | ❌ | Own | Own | ❌ |
+| Action | P.Admin | P.Manager | C.Admin | C.Manager | C.Member |
+|--------|---------|-----------|---------|-----------|----------|
+| View audit logs | All | All (read) | Own | Own | X |
 
 **Rules:**
 - Platform Admin sees all audit logs across the platform.
@@ -217,7 +216,7 @@ Roles are divided into two tiers: **Platform roles** (no company affiliation, cr
 
 ### Permission Checks
 
-All inators implement permissions using USERinator’s role context:
+All inators implement permissions using USERinator's role context:
 
 ```python
 # Get user context from USERinator
@@ -226,10 +225,12 @@ role_level = context['role_level']
 company_id = context['company_id']  # None for platform roles
 
 # Role-level checks
-is_platform_admin   = role_level >= 100  # PLATFORM_ADMIN
-is_platform_user    = role_level >= 60 and company_id is None  # any platform role
-is_company_admin    = role_level >= 50 and company_id is not None  # C.Admin+
-is_company_manager  = role_level >= 30 and company_id is not None  # C.Manager+
+PLATFORM_ROLE_THRESHOLD = 75  # PLATFORM_MANAGER is the lowest platform role
+
+is_platform_admin   = role_level >= 100
+is_platform_user    = role_level >= PLATFORM_ROLE_THRESHOLD and company_id is None
+is_company_admin    = role_level >= 50 and company_id is not None
+is_company_manager  = role_level >= 30 and company_id is not None
 is_member           = role_level >= 10
 ```
 
@@ -238,11 +239,11 @@ is_member           = role_level >= 10
 All resources must be filtered by company. Platform roles bypass this filter:
 
 ```python
-# Platform Admin or any platform role (60+, no company) → see everything
-if role_level >= 100 or (role_level >= 60 and company_id is None):
+# Platform Admin or any platform role (>= 75, no company) -> see everything
+if role_level >= 100 or (role_level >= 75 and company_id is None):
     queryset = Model.objects.all()
 
-# Company-scoped roles → own company only
+# Company-scoped roles -> own company only
 else:
     queryset = Model.objects.filter(company_id=company_id)
 ```
@@ -255,7 +256,7 @@ def can_manage_user(acting_level, acting_company, target_level, target_company):
     # Platform Admin can manage anyone
     if acting_level >= 100:
         return True
-    # Company-scoped: must be same company and higher level
+    # Company-scoped: must be same company and strictly higher level
     if acting_level >= 30 and acting_company == target_company:
         return target_level < acting_level  # cannot manage peers or superiors
     return False
@@ -270,38 +271,39 @@ def can_assign_role(acting_level, target_role_level):
 
 # Company Admin (50) cannot create other Company Admins
 # Company Manager (30) can only create Company Members (10)
+# Platform roles can only be assigned by Platform Admin (100)
 ```
 
 ---
 
 ## Role Comparison Summary
 
-| Capability | P.Admin | P.Manager | P.Member | C.Admin | C.Manager | C.Member |
-|------------|---------|-----------|----------|---------|-----------|----------|
-| Cross-company view | ✓ | ✓ | ✓ | ❌ | ❌ | ❌ |
-| Company-scoped view | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Edit company data | ✓ | ❌ | ❌ | ✓ | ✓ | ❌ |
-| Create companies | ✓ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Manage users (lower level) | ✓ | ❌ | ❌ | ✓ | ✓ | ❌ |
-| Deactivate users | ✓ | ❌ | ❌ | ✓ | ✓ (mbr only) | ❌ |
-| Mark/delete users | ✓ | ❌ | ❌ | ✓ | ✓ (mbr only) | ❌ |
-| Approve invitations | ✓ | ❌ | ❌ | ✓ | ✓ | ❌ |
-| Change others’ credentials | ✓ | ❌ | ❌ | ✓ (< 50) | ✓ (< 30) | ❌ |
-| Create RMAs/POs | ✓ | ❌ | ❌ | ✓ | ✓ | ✓ |
-| Edit/delete RMAs/POs | ✓ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Service registry | ✓ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Capability | P.Admin | P.Manager | C.Admin | C.Manager | C.Member |
+|------------|---------|-----------|---------|-----------|----------|
+| Cross-company view | Yes | Yes | No | No | No |
+| Company-scoped view | Yes | Yes | Yes | Yes | Yes |
+| Edit company data | Yes | No | Yes | Yes | No |
+| Create companies | Yes | No | No | No | No |
+| Manage users (lower level) | Yes | No | Yes | Yes | No |
+| Deactivate users | Yes | No | Yes | Yes (mbr only) | No |
+| Mark/delete users | Yes | No | Yes | Yes (mbr only) | No |
+| Approve invitations | Yes | No | Yes | Yes | No |
+| Change others' credentials | Yes | No | Yes (< 50) | Yes (< 30) | No |
+| Create RMAs/POs | Yes | No | Yes | Yes | Yes |
+| Edit/delete RMAs/POs | Yes | No | No | No | No |
+| Service registry | Yes | No | No | No | No |
 
 ---
 
 ## Security Principles
 
 1. **Deny by default** — If permission is unclear, deny access.
-2. **Company scoping** — Company roles always filter by their company. Platform roles may observe all companies but only Platform Admin can modify cross-company.
+2. **Company scoping** — Company roles always filter by their company. Platform Manager can observe all companies but cannot write.
 3. **No privilege escalation** — Users cannot assign or manage roles equal to or higher than their own.
 4. **Role hierarchy enforcement** — Company Admin cannot manage other Company Admins. Company Manager cannot manage Company Admins or other Managers.
 5. **Immutability for audit** — Critical records (Orders, Deliveries) cannot be deleted by anyone.
 6. **Two-step deletion** — Users are first deactivated (by managers), then marked for deletion, then permanently deleted (Platform Admin only).
-7. **Minimal permissions** — Company Member has read-only access to their company’s data.
+7. **Minimal permissions** — Company Member has read-only access to their company's data.
 8. **Single source of truth** — USERinator owns all role and permission data. AUTHinator defers to USERinator for fine-grained roles.
 9. **Credential security** — Self-service credential changes require current password verification. Admin-initiated changes require appropriate role hierarchy.
 
@@ -309,7 +311,7 @@ def can_assign_role(acting_level, target_role_level):
 
 Each permission rule should have:
 1. Unit test for Platform Admin access (full)
-2. Unit test for Platform Manager/Member access (read-only cross-company)
+2. Unit test for Platform Manager access (read-only cross-company, no writes)
 3. Unit test for Company Admin access (own company, can manage managers)
 4. Unit test for Company Manager access (own company, members only)
 5. Unit test for Company Member access (own company, view-only)
