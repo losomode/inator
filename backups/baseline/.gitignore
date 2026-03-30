@@ -1,0 +1,6 @@
+# Ignore baseline backup contents — these are local only
+system-backup-*/
+*.sqlite3
+
+# Keep this file and the directory itself
+!.gitignore

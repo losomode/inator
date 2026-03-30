@@ -544,6 +544,18 @@ tasks:
         echo "✅ Original data restored. Restart services to pick it up:"
         echo "   task restart:all"
 
+  # ─── Backups ────────────────────────────────────────
+
+  backup:baseline:
+    desc: Create a baseline snapshot under backups/baseline/ (never pruned; manual only)
+    cmds:
+      - "{{.BASE_DIR}}/scripts/backup.sh baseline"
+
+  backup:restore:
+    desc: Restore databases from a backup folder and restart all services (interactive)
+    cmds:
+      - "{{.BASE_DIR}}/restore_backup {{.CLI_ARGS}}"
+
   setup:sso:
     desc: Configure OAuth providers (Google, Microsoft) from .env credentials
     cmds:

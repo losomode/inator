@@ -231,6 +231,32 @@ task demodb:deactivate
 task restart:all
 ```
 
+### Backups & Restore
+
+The platform stores state in each inator's SQLite database at `<Inator>/backend/db.sqlite3`. The backup tooling supports two snapshot types:
+
+- **Rotating** snapshots in `backups/system-backup-*/` (pruned to keep **max 28**)
+- **Baseline** snapshots in `backups/baseline/system-backup-*/` (never pruned; manual only)
+
+Automatic rotating backups (recommended — midnight & noon):
+
+```bash
+0 0,12 * * * /path/to/inator/scripts/backup.sh >> /path/to/inator/logs/backup.log 2>&1
+```
+
+Manual baseline snapshot:
+
+```bash
+task backup:baseline
+```
+
+Restore (interactive; overwrites DBs and restarts services):
+
+```bash
+task backup:restore -- system-backup-YYYY-MM-DD_hh-mm-ss
+task backup:restore -- baseline/system-backup-YYYY-MM-DD_hh-mm-ss
+```
+
 ### Platform-Level Tasks
 
 ```bash
@@ -243,6 +269,12 @@ task setup:rmainator      # Setup just RMAinator
 task setup:demodb         # Build demo databases with sample data
 task demodb:activate      # Swap to demo data (backs up active DBs)
 task demodb:deactivate    # Restore original databases
+
+# Backups
+# (Rotating backups are typically run via cron calling scripts/backup.sh)
+task backup:baseline       # Create a baseline snapshot (never pruned; manual only)
+task backup:restore -- <backup-name>  # Restore a rotating backup (interactive)
+task backup:restore -- baseline/<backup-name>  # Restore a baseline backup (interactive)
 
 # Start/Stop/Restart
 task start:all            # Start all backends + frontends + Caddy gateway

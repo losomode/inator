@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+# inator database restore script
+#
+# Usage:
+#   ./restore_backup system-backup-2026-03-27_06-00-00
+#   ./restore_backup baseline/system-backup-2026-03-27_06-00-00
+#   task backup:restore -- system-backup-2026-03-27_06-00-00
+#   task backup:restore -- baseline/system-backup-2026-03-27_06-00-00
+#
+# Lists available backups if called with no arguments.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKUP_ROOT="$SCRIPT_DIR/backups"
+
+# ── List available backups if no argument given ────────────────────────────────
+
+if [[ -z "${1:-}" ]]; then
+  echo ""
+  echo "Usage: ./restore_backup <backup-name>"
+  echo ""
+  echo "Rotating backups (newest first):"
+  if ls "$BACKUP_ROOT"/system-backup-* 2>/dev/null | head -1 &>/dev/null; then
+    ls -1dt "$BACKUP_ROOT"/system-backup-* | xargs -I{} basename {} | head -20
+  else
+    echo "  (none found — wait for cron or run ./scripts/backup.sh)"
+  fi
+  echo ""
+  echo "Baseline backups (newest first):"
+  if ls "$BACKUP_ROOT"/baseline/system-backup-* 2>/dev/null | head -1 &>/dev/null; then
+    ls -1dt "$BACKUP_ROOT"/baseline/system-backup-* \
+      | xargs -I{} basename {} \
+      | sed 's|^|baseline/|' \
+      | head -20
+  else
+    echo "  (none found — create one with 'task backup:baseline')"
+  fi
+  echo ""
+  exit 1
+fi
+
+BACKUP_NAME="$1"
+BACKUP_PATH="$BACKUP_ROOT/$BACKUP_NAME"
+
+# ── Validate backup folder ─────────────────────────────────────────────────────
+
+if [[ ! -d "$BACKUP_PATH" ]]; then
+  echo ""
+  echo "❌ Backup not found: $BACKUP_PATH"
+  echo ""
+  echo "Available rotating backups:"
+  ls -1dt "$BACKUP_ROOT"/system-backup-* 2>/dev/null | xargs -I{} basename {} | head -20 || echo "  (none)"
+  echo ""
+  echo "Available baseline backups:"
+  ls -1dt "$BACKUP_ROOT"/baseline/system-backup-* 2>/dev/null \
+    | xargs -I{} basename {} \
+    | sed 's|^|baseline/|' \
+    | head -20 || echo "  (none)"
+  echo ""
+  exit 1
+fi
+
+# Show what we're about to restore
+echo ""
+echo "🔄 Restore from: $BACKUP_NAME"
+echo ""
+if [[ -f "$BACKUP_PATH/manifest.txt" ]]; then
+  cat "$BACKUP_PATH/manifest.txt"
+  echo ""
+fi
+
+# ── Confirm ────────────────────────────────────────────────────────────────────
+
+echo "⚠️  This will OVERWRITE current databases and restart all services."
+echo "   Make sure you have a current backup if you want to keep recent changes."
+echo ""
+read -r -p "Type 'yes' to continue: " confirm
+if [[ "$confirm" != "yes" ]]; then
+  echo "Aborted — no changes made."
+  exit 0
+fi
+
+# ── Stop services ──────────────────────────────────────────────────────────────
+
+echo ""
+echo "🛑 Stopping all services..."
+cd "$SCRIPT_DIR"
+task stop:all 2>/dev/null || true
+sleep 1
+
+# ── Restore databases ──────────────────────────────────────────────────────────
+
+echo ""
+echo "📂 Restoring databases..."
+
+SERVICES=(RMAinator Userinator Authinator Fulfilinator)
+
+RESTORED=0
+for service in "${SERVICES[@]}"; do
+  src="$BACKUP_PATH/${service}-db.sqlite3"
+  dest="$SCRIPT_DIR/$service/backend/db.sqlite3"
+
+  if [[ ! -f "$src" ]]; then
+    echo "  ⚠️  $service — not found in backup, skipping"
+    continue
+  fi
+
+  # Back up the current db (and WAL/SHM) before overwriting (safety net)
+  if [[ -f "$dest" ]]; then
+    cp "$dest" "${dest}.pre-restore"
+  fi
+  if [[ -f "${dest}-wal" ]]; then
+    cp "${dest}-wal" "${dest}.pre-restore-wal"
+  fi
+  if [[ -f "${dest}-shm" ]]; then
+    cp "${dest}-shm" "${dest}.pre-restore-shm"
+  fi
+
+  # Remove any existing WAL/SHM/journal so we don't replay stale transactions
+  rm -f "${dest}-wal" "${dest}-shm" "${dest}-journal"
+
+  cp "$src" "$dest"
+  echo "  ✅  $service restored"
+  ((RESTORED+=1))
+done
+
+echo ""
+echo "💾 Pre-restore copies saved as db.sqlite3.pre-restore in each backend/"
+echo "   (delete manually once you've confirmed the restore worked)"
+
+# ── Restart services ───────────────────────────────────────────────────────────
+
+echo ""
+echo "🚀 Starting all services..."
+task start:all
+
+echo ""
+echo "✅ Restore complete from $BACKUP_NAME ($RESTORED database(s) restored)"
+echo "   Access at: http://localhost:8080"
+echo ""

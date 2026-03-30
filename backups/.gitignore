@@ -1,0 +1,7 @@
+# Ignore actual backup contents — these are local only
+system-backup-*/
+*.sqlite3
+
+# Keep these files and the directory itself
+!.gitignore
+!backup-cron.md
