@@ -12,6 +12,7 @@ export interface User {
   role_level?: number;
   role_name?: string;
   display_name?: string;
+  company_id?: number;
   company_name?: string;
 }
 

@@ -16,4 +16,10 @@ export const companiesApi = {
     const response = await apiClient.get<Company>(`/companies/${id}/`);
     return response.data;
   },
+
+  /** Fetch the current user's own company (available to all authenticated users). */
+  my: async (): Promise<Company> => {
+    const response = await apiClient.get<Company>('/companies/my/');
+    return response.data;
+  },
 };

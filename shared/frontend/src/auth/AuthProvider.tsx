@@ -46,14 +46,16 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         role_level?: number;
         role_name?: string;
         display_name?: string;
-        company?: { name: string };
+        company?: number;
+        company_name?: string;
       }>('/users/me/', {
         headers: { 'Cache-Control': 'no-cache' },
       });
       authUser.role_level = profileResp.data.role_level;
       authUser.role_name = profileResp.data.role_name;
       authUser.display_name = profileResp.data.display_name;
-      authUser.company_name = profileResp.data.company?.name;
+      authUser.company_id = profileResp.data.company;
+      authUser.company_name = profileResp.data.company_name;
 
       setUser(authUser);
     } catch {
