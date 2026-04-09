@@ -71,6 +71,9 @@ tasks:
     cmds:
       - task: _setup
         vars: { NAME: USERinator, DIR: "{{.USERINATOR_DIR}}" }
+      - echo "   Creating default roles..."
+      - cd "{{.BASE_DIR}}/{{.USERINATOR_DIR}}" && task backend:manage -- create_default_roles
+      - echo "✓ USERinator roles ready"
 
   _setup:
     internal: true
