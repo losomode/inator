@@ -6,6 +6,8 @@ The Inator Platform is a family of purpose-built microservices for **business-to
 
 Every inator is self-contained, independently deployable, and follows the same conventions. Add a new one when you need a new capability. It's microservices, but fun.
 
+> **Just want to get it running?** Skip the architecture tour and jump to [Quick Start](#quick-start).
+
 ## Architecture
 
 ### Request Routing
