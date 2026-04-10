@@ -8,51 +8,23 @@ Every inator is self-contained, independently deployable, and follows the same c
 
 ## Architecture
 
+### Request Routing
+
+All traffic flows through a **Caddy reverse proxy** on port 8080. Caddy routes frontend paths to per-inator dev servers and API prefixes to backends.
+
 ```mermaid
-graph TB
-    CLIENT[🌐 Browser] --> CADDY
+graph LR
+    CLIENT[🌐 Browser] --> CADDY[🔀 Caddy Gateway<br/><i>:8080</i>]
 
-    subgraph "The Inator Platform"
-        CADDY[🔀 Caddy Gateway<br/><i>:8080</i>]
+    CADDY -->|/rma/*| RMA_FE[🖥 RMAinator<br/><i>:3002</i>]
+    CADDY -->|/fulfil/*| FULFIL_FE[🖥 Fulfilinator<br/><i>:3003</i>]
+    CADDY -->|/users/*| USER_FE[🖥 USERinator<br/><i>:3004</i>]
+    CADDY -->|catch-all /| AUTH_FE[🖥 Authinator<br/><i>:3001</i>]
 
-        subgraph "Core Services"
-            AUTH_FE[🖥 Authinator Frontend<br/><i>:3001 → /</i>]
-            AUTH[🔐 Authinator<br/><i>Backend :8001</i>]
-            USER_FE[🖥 USERinator Frontend<br/><i>:3004 → /users</i>]
-            USER[👤 USERinator<br/><i>Backend :8004</i>]
-        end
-
-        subgraph "Business Services"
-            RMA_FE[🖥 RMAinator Frontend<br/><i>:3002 → /rma</i>]
-            RMA[📦 RMAinator<br/><i>Backend :8002</i>]
-            FULFIL_FE[🖥 Fulfilinator Frontend<br/><i>:3003 → /fulfil</i>]
-            FULFIL[🚚 Fulfilinator<br/><i>Backend :8003</i>]
-            INV[📋 Inventoryinator<br/><i>Coming Soon</i>]
-            NOTIF[🔔 Notificationinator<br/><i>Coming Soon</i>]
-            USAGE[📊 Usageinator<br/><i>Coming Soon</i>]
-            LIC[📄 Licenseinator<br/><i>Coming Soon</i>]
-        end
-    end
-
-    CADDY -->|/api/auth, /accounts| AUTH
-    CADDY -->|/api/users, /api/companies, /api/roles, /api/invitations| USER
-    CADDY -->|/api/rma| RMA
-    CADDY -->|/api/fulfil| FULFIL
-    CADDY -->|/rma/*| RMA_FE
-    CADDY -->|/fulfil/*| FULFIL_FE
-    CADDY -->|/users/*| USER_FE
-    CADDY -->|catch-all| AUTH_FE
-
-    AUTH -- JWT tokens --> RMA
-    AUTH -- JWT tokens --> FULFIL
-    AUTH -- JWT tokens --> USER
-    AUTH -- JWT tokens --> INV
-    AUTH -- JWT tokens --> NOTIF
-    AUTH -- JWT tokens --> USAGE
-    AUTH -- JWT tokens --> LIC
-    AUTH -- role query --> USER
-    USER -- role_level in JWT --> RMA
-    USER -- role_level in JWT --> FULFIL
+    CADDY -->|/api/auth, /accounts| AUTH[🔐 Authinator<br/><i>:8001</i>]
+    CADDY -->|/api/users, /api/companies,<br/>/api/roles, /api/invitations| USER[👤 USERinator<br/><i>:8004</i>]
+    CADDY -->|/api/rma| RMA[📦 RMAinator<br/><i>:8002</i>]
+    CADDY -->|/api/fulfil| FULFIL[🚚 Fulfilinator<br/><i>:8003</i>]
 
     style CADDY fill:#e74c3c,color:#fff
     style AUTH_FE fill:#3498db,color:#fff
@@ -63,15 +35,40 @@ graph TB
     style USER fill:#9b59b6,color:#fff
     style RMA fill:#27ae60,color:#fff
     style FULFIL fill:#e67e22,color:#fff
-    style INV fill:#95a5a6,color:#fff,stroke-dasharray: 5 5
-    style NOTIF fill:#95a5a6,color:#fff,stroke-dasharray: 5 5
-    style USAGE fill:#95a5a6,color:#fff,stroke-dasharray: 5 5
-    style LIC fill:#95a5a6,color:#fff,stroke-dasharray: 5 5
 ```
 
-All traffic flows through a **Caddy reverse proxy** on port 8080. API requests route to backends by path prefix. Each inator serves its own frontend — Caddy routes `/rma/*`, `/fulfil/*`, `/users/*` to their respective dev servers, with Authinator as the catch-all serving the core UI (login, service directory).
+### Service Dependencies
 
 **Authinator** is the foundation — every other inator delegates authentication to it via JWT. **USERinator** is the authoritative source for user profiles, companies, and roles — Authinator enriches JWT tokens with `role_level` and `role_name` claims fetched from USERinator at login.
+
+```mermaid
+graph TD
+    AUTH[🔐 Authinator<br/><i>Auth, SSO, MFA</i>]
+    USER[👤 USERinator<br/><i>Users, Companies, Roles</i>]
+    RMA[📦 RMAinator<br/><i>Returns</i>]
+    FULFIL[🚚 Fulfilinator<br/><i>Orders & Deliveries</i>]
+
+    AUTH -- JWT tokens --> RMA
+    AUTH -- JWT tokens --> FULFIL
+    AUTH -- JWT tokens --> USER
+    AUTH -- role query at login --> USER
+    USER -- role_level in JWT --> RMA
+    USER -- role_level in JWT --> FULFIL
+
+    style AUTH fill:#4a90d9,color:#fff
+    style USER fill:#9b59b6,color:#fff
+    style RMA fill:#27ae60,color:#fff
+    style FULFIL fill:#e67e22,color:#fff
+```
+
+### Planned Services
+
+The platform is designed to grow. These inators are on the roadmap:
+
+- 📋 **Inventoryinator** — Inventory and asset tracking
+- 🔔 **Notificationinator** — Email, SMS, and in-app notifications
+- 📊 **Usageinator** — Usage metrics and analytics
+- 📄 **Licenseinator** — License key management
 
 ## Anatomy of an Inator
 
@@ -99,20 +96,22 @@ Each inator is **fully self-contained** — both backend and frontend live withi
 
 | Service | Purpose | Backend | Frontend | API Prefix |
 |---------|---------|---------|----------|------------|
-| **Authinator** | Auth, SSO, MFA, service directory | :8001 | :3001 → `/` | `/api/auth` |
-| **USERinator** | User profiles, companies, roles | :8004 | :3004 → `/users` | `/api/users`, `/api/companies`, `/api/roles`, `/api/invitations` |
-| **RMAinator** | Return merchandise authorization | :8002 | :3002 → `/rma` | `/api/rma` |
-| **Fulfilinator** | Purchase orders, orders, deliveries | :8003 | :3003 → `/fulfil` | `/api/fulfil` |
+| **[Authinator](https://github.com/losomode/AUTHinator)** | Auth, SSO, MFA, service directory | :8001 | :3001 → `/` | `/api/auth` |
+| **[USERinator](https://github.com/losomode/USERinator)** | User profiles, companies, roles | :8004 | :3004 → `/users` | `/api/users`, `/api/companies`, `/api/roles`, `/api/invitations` |
+| **[RMAinator](https://github.com/losomode/RMAinator)** | Return merchandise authorization | :8002 | :3002 → `/rma` | `/api/rma` |
+| **[Fulfilinator](https://github.com/losomode/FULFILinator)** | Purchase orders, orders, deliveries | :8003 | :3003 → `/fulfil` | `/api/fulfil` |
 
 ## Roles
 
-The platform uses a numeric role level system managed by USERinator:
+The platform uses a numeric role level system managed by USERinator. Platform roles (level ≥ 75) are company-independent; company roles (level < 60) require a company association.
 
-| Role | Level | Access |
-|------|-------|--------|
-| **ADMIN** | 100 | Full access. Manage data, users, and workflows across all companies. |
-| **MANAGER** | 30 | Company-scoped management. View and manage company users and data. |
-| **MEMBER** | 10 | Company-scoped. View and interact with their own company's data. |
+| Role | Level | Scope | Access |
+|------|-------|-------|--------|
+| **PLATFORM_ADMIN** | 100 | Platform | Full read/write access across all companies. |
+| **PLATFORM_MANAGER** | 75 | Platform | Cross-company read access with limited write permissions. |
+| **COMPANY_ADMIN** | 50 | Company | Elevated company access. Manage managers and members, approve invitations, deactivate users. |
+| **COMPANY_MANAGER** | 30 | Company | Team management within their company. Manage members and approve invitations. |
+| **COMPANY_MEMBER** | 10 | Company | Read access to their company's data. |
 
 Custom roles can be created with any level between 1-100. USERinator owns role definitions; Authinator enriches JWT tokens with `role_level` and `role_name` at login. All services use `role_level >= threshold` for permission checks.
 
@@ -205,7 +204,7 @@ task restart:all
 - **4 companies**: Acme Corporation, Globex Industries, Initech LLC, Wayne Enterprises
 - **12 users**: 2 platform admins, 10 company users (managers and members)
 - **6 catalog items**: Security cameras, sensors, locks, alarms, NVR
-- **Full RBAC hierarchy**: ADMIN (100), MANAGER (30), MEMBER (10)
+- **Full RBAC hierarchy**: PLATFORM_ADMIN (100), COMPANY_MANAGER (30), COMPANY_MEMBER (10)
 - Complete fulfillment pipeline (purchase orders, orders, deliveries)
 - RMA workflows in various states
 - **OAuth/SSO**: Google and Microsoft login (if credentials configured)
@@ -214,13 +213,13 @@ Log in with any demo account:
 
 | Username | Password | Role | Company |
 |----------|----------|------|---------|
-| `admin` | `admin` | ADMIN | Platform |
-| `alice.admin` | `admin` | ADMIN | Platform |
-| `bob.manager` | `manager` | MANAGER | Acme Corporation |
-| `carol.member` | `member` | MEMBER | Acme Corporation |
-| `frank.manager` | `manager` | MANAGER | Globex Industries |
-| `henry.manager` | `manager` | MANAGER | Initech LLC |
-| `jack.manager` | `manager` | MANAGER | Wayne Enterprises |
+| `admin` | `admin` | PLATFORM_ADMIN | Platform |
+| `alice.admin` | `admin` | PLATFORM_ADMIN | Platform |
+| `bob.manager` | `manager` | COMPANY_MANAGER | Acme Corporation |
+| `carol.member` | `member` | COMPANY_MEMBER | Acme Corporation |
+| `frank.manager` | `manager` | COMPANY_MANAGER | Globex Industries |
+| `henry.manager` | `manager` | COMPANY_MANAGER | Initech LLC |
+| `jack.manager` | `manager` | COMPANY_MANAGER | Wayne Enterprises |
 
 **See full demo details:** [`docs/DEMO_DATABASE.md`](docs/DEMO_DATABASE.md)
 
